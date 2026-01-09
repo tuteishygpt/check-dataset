@@ -41,8 +41,16 @@ def cache_dataset(dataset_name: str, limit: int, data):
 
 def array_to_b64_audio(audio_array, sampling_rate):
     """Convert numpy array audio to base64 encoded HTML audio tag."""
+    if audio_array is None or len(audio_array) == 0:
+        return '<div style="width: 100%; margin-top: 10px; height: 36px; border-radius: 8px; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: #64748b;">🔇 Аўдыя недаступна</div>'
+
     buffer = io.BytesIO()
-    sf.write(buffer, audio_array, sampling_rate, format='WAV')
+    # Ensure sampling_rate is an integer and handle potential NaNs from Pandas
+    if pd.notnull(sampling_rate):
+        sr = int(float(sampling_rate))
+    else:
+        sr = 16000
+    sf.write(buffer, audio_array, sr, format='WAV')
     buffer.seek(0)
     b64_data = base64.b64encode(buffer.read()).decode('utf-8')
     return f'<audio controls src="data:audio/wav;base64,{b64_data}" style="width: 100%; margin-top: 10px; height: 36px; border-radius: 8px;"></audio>'
@@ -130,7 +138,7 @@ def generate_dashboard_outputs(similarity_threshold: int):
             score_int = int(round(score))
             score_color = "#f5576c" if score < 50 else "#fbbf24" if score < 75 else "#34d399"
 
-            audio_html = array_to_b64_audio(row['audio_array'], row['sampling_rate'])
+            audio_html = array_to_b64_audio(row.get('audio_array'), row.get('sampling_rate'))
 
             model_used = row.get('model_used', 'unknown')
             model_badge = "🖐️ Ручная праверка" if model_used == 'manual' else _e(model_used)
@@ -220,9 +228,16 @@ def run_analysis(
     temperature: float,
     thinking_budget: int,
     similarity_threshold: int,
+    recheck_problematic: bool = False,
     progress=gr.Progress()
 ):
     global global_results
+    
+    # Robust type conversion for Gradio inputs
+    limit_files = int(float(limit_files)) if limit_files else 0
+    thinking_budget = int(float(thinking_budget)) if thinking_budget else 0
+    similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
+    temperature = float(temperature)
 
     if not api_key:
         raise gr.Error("Калі ласка, увядзіце Gemini API ключ.")
@@ -234,49 +249,129 @@ def run_analysis(
         use_thinking = "thinking" in model_name
 
         if use_thinking and thinking_budget > 0:
-            config_args["thinking_config"] = {"include_thoughts": True}
+            config_args["thinking_config"] = {
+                "include_thoughts": True,
+                "budget_tokens": thinking_budget
+            }
 
         gen_config = genai.types.GenerateContentConfig(**config_args)
 
-        limit = limit_files if limit_files > 0 else None
+        if recheck_problematic:
+            if not global_results:
+                gr.Warning("Няма вынікаў для пераправеркі.")
+                return generate_dashboard_outputs(similarity_threshold)
+            
+            # Identify problematic records
+            target_indices = [
+                i for i, r in enumerate(global_results) 
+                if r['score'] < similarity_threshold 
+                and r.get('verification_status') != 'correct'
+            ]
+            
+            if limit_files > 0:
+                target_indices = target_indices[:limit_files]
+            
+            if not target_indices:
+                gr.Info("Няма праблемных файлаў для пераправеркі.")
+                return generate_dashboard_outputs(similarity_threshold)
 
-        cached_ds = get_cached_dataset(dataset_name, limit)
-        if cached_ds is not None:
-            progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
-            ds = cached_ds
+            # Load dataset to get audio for files that might be missing it
+            limit = None # Always load full dataset for rechecking to ensure we find matches
+            cached_ds = get_cached_dataset(dataset_name, limit)
+            if cached_ds is not None:
+                progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
+                ds = cached_ds
+            else:
+                progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
+                ds = utils.load_hf_dataset(dataset_name, limit=limit)
+                cache_dataset(dataset_name, limit, ds)
+                progress(0.05, desc=f"Датасет закэшаваны")
+            
+            # Build audio map by filename
+            audio_map = {}
+            for item in ds:
+                path = item['audio']['path']
+                if path:
+                    fname = os.path.basename(path)
+                    audio_map[fname] = item
+                    audio_map[path] = item
+
+            progress(0.1, desc=f"Пераправерка {len(target_indices)} файлаў...")
+            
+            for j, idx in enumerate(target_indices):
+                progress(0.1 + (j + 1) / len(target_indices) * 0.9, desc=f"Праверка {j+1}/{len(target_indices)}")
+                
+                result = global_results[idx]
+                audio_data = result.get('audio_array')
+                sampling_rate = result.get('sampling_rate')
+                ref_text = result.get('ref_text', "")
+                
+                # If audio is missing, try to fetch from dataset
+                if audio_data is None or len(audio_data) == 0:
+                    path = result.get('path', '')
+                    item = audio_map.get(path) or audio_map.get(os.path.basename(path))
+                    if item:
+                        audio_data = item['audio']['array']
+                        sampling_rate = item['audio']['sampling_rate']
+                        # Also update the global_results with audio for future use
+                        global_results[idx]['audio_array'] = audio_data
+                        global_results[idx]['sampling_rate'] = sampling_rate
+                    else:
+                        continue  # Skip if audio still not found
+
+                hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+                global_results[idx].update({
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp,
+                    "model_used": model_name,
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                })
+
         else:
-            progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-            ds = utils.load_hf_dataset(dataset_name, limit=limit)
-            cache_dataset(dataset_name, limit, ds)
-            progress(0.1, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
+            limit = int(limit_files) if limit_files > 0 else None
 
-        results = []
+            cached_ds = get_cached_dataset(dataset_name, limit)
+            if cached_ds is not None:
+                progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
+                ds = cached_ds
+            else:
+                progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
+                ds = utils.load_hf_dataset(dataset_name, limit=limit)
+                cache_dataset(dataset_name, limit, ds)
+                progress(0.1, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
 
-        for idx, item in enumerate(ds):
-            progress((idx + 1) / len(ds), desc=f"Апрацоўка файла {idx+1}/{len(ds)}")
+            results = []
 
-            audio_data = item['audio']['array']
-            sampling_rate = item['audio']['sampling_rate']
-            ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+            for idx, item in enumerate(ds):
+                progress((idx + 1) / len(ds), desc=f"Апрацоўка файла {idx+1}/{len(ds)}")
 
-            hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
-            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+                audio_data = item['audio']['array']
+                sampling_rate = item['audio']['sampling_rate']
+                ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
 
-            results.append({
-                "id": idx,
-                "path": item['audio']['path'],
-                "ref_text": ref_text,
-                "hyp_text": hyp_text,
-                "score": score,
-                "norm_ref": norm_ref,
-                "norm_hyp": norm_hyp,
-                "audio_array": audio_data,
-                "sampling_rate": sampling_rate,
-                "model_used": model_name,
-                "verification_status": "correct" if score >= similarity_threshold else "incorrect"
-            })
+                hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
-        global_results = results
+                results.append({
+                    "id": idx,
+                    "path": item['audio']['path'],
+                    "ref_text": ref_text,
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp,
+                    "audio_array": audio_data,
+                    "sampling_rate": sampling_rate,
+                    "model_used": model_name,
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                })
+            
+            global_results = results
+
         return generate_dashboard_outputs(similarity_threshold)
 
     except Exception as e:
@@ -290,9 +385,16 @@ def run_smart_analysis(
     temperature: float,
     thinking_budget: int,
     similarity_threshold: int,
+    recheck_problematic: bool = False,
     progress=gr.Progress()
 ):
     global global_results
+    
+    # Robust type conversion for Gradio inputs
+    limit_files = int(float(limit_files)) if limit_files else 0
+    thinking_budget = int(float(thinking_budget)) if thinking_budget else 0
+    similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
+    temperature = float(temperature)
 
     if not api_key:
         raise gr.Error("Калі ласка, увядзіце Gemini API ключ.")
@@ -310,50 +412,131 @@ def run_smart_analysis(
         config_args = {"temperature": temperature}
         gen_config = genai.types.GenerateContentConfig(**config_args)
 
-        limit = limit_files if limit_files > 0 else None
-
-        cached_ds = get_cached_dataset(dataset_name, limit)
-        if cached_ds is not None:
-            progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
-            ds = cached_ds
-        else:
-            progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-            ds = utils.load_hf_dataset(dataset_name, limit=limit)
-            cache_dataset(dataset_name, limit, ds)
-            progress(0.05, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
-
         results = []
-
-        # STEP 1
-        model_name = models[0][0]
+        
+        # STEP 1: Initialization / First Pass
         step_desc = models[0][1]
-        progress(0.05, desc=f"{step_desc}: апрацоўка ўсіх {len(ds)} запісаў...")
+        model_name = models[0][0]
 
-        for idx, item in enumerate(ds):
-            progress(0.05 + (idx + 1) / len(ds) * 0.20, desc=f"{step_desc}: файл {idx+1}/{len(ds)}")
+        if recheck_problematic:
+            if not global_results:
+                gr.Warning("Няма вынікаў для пераправеркі.")
+                return generate_dashboard_outputs(similarity_threshold)
+            
+            results = global_results # Work on the global list directly/by reference
+            
+            # Identify start set: only problematic items
+            problematic_indices = [
+                i for i, r in enumerate(results) 
+                if r['score'] < similarity_threshold 
+                and r.get('verification_status') != 'correct'
+            ]
+            
+            if limit_files > 0:
+                problematic_indices = problematic_indices[:limit_files]
+            
+            if not problematic_indices:
+                gr.Info("Няма праблемных файлаў для пераправеркі.")
+                return generate_dashboard_outputs(similarity_threshold)
 
-            audio_data = item['audio']['array']
-            sampling_rate = item['audio']['sampling_rate']
-            ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+            # Load dataset to get audio for files that might be missing it
+            limit = None # Always load full dataset for rechecking to ensure we find matches
+            cached_ds = get_cached_dataset(dataset_name, limit)
+            if cached_ds is not None:
+                progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
+                ds = cached_ds
+            else:
+                progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
+                ds = utils.load_hf_dataset(dataset_name, limit=limit)
+                cache_dataset(dataset_name, limit, ds)
+                progress(0.03, desc=f"Датасет закэшаваны")
+            
+            # Build audio map by filename
+            audio_map = {}
+            for item in ds:
+                path = item['audio']['path']
+                if path:
+                    fname = os.path.basename(path)
+                    audio_map[fname] = item
+                    audio_map[path] = item
 
-            hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
-            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+            progress(0.05, desc=f"{step_desc}: пераправерка {len(problematic_indices)} запісаў...")
 
-            results.append({
-                "id": idx,
-                "path": item['audio']['path'],
-                "ref_text": ref_text,
-                "hyp_text": hyp_text,
-                "score": score,
-                "norm_ref": norm_ref,
-                "norm_hyp": norm_hyp,
-                "audio_array": audio_data,
-                "sampling_rate": sampling_rate,
-                "model_used": model_name,
-                "verification_status": "correct" if score >= similarity_threshold else "incorrect"
-            })
+            for j, res_idx in enumerate(problematic_indices):
+                progress(0.05 + (j + 1) / len(problematic_indices) * 0.20, desc=f"{step_desc}: запіс {j+1}/{len(problematic_indices)}")
 
-        # STEP 2-4
+                result = results[res_idx]
+                audio_data = result.get('audio_array')
+                sampling_rate = result.get('sampling_rate')
+                ref_text = result.get('ref_text', "")
+                
+                # If audio is missing, try to fetch from dataset
+                if audio_data is None or len(audio_data) == 0:
+                    path = result.get('path', '')
+                    item = audio_map.get(path) or audio_map.get(os.path.basename(path))
+                    if item:
+                        audio_data = item['audio']['array']
+                        sampling_rate = item['audio']['sampling_rate']
+                        # Also update with audio for future use
+                        results[res_idx]['audio_array'] = audio_data
+                        results[res_idx]['sampling_rate'] = sampling_rate
+                    else:
+                        continue  # Skip if audio still not found
+
+                hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+                results[res_idx].update({
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp,
+                    "model_used": model_name,
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                })
+
+        else:
+            # Standard logic: load dataset and process all
+            limit = int(limit_files) if limit_files > 0 else None
+
+            cached_ds = get_cached_dataset(dataset_name, limit)
+            if cached_ds is not None:
+                progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
+                ds = cached_ds
+            else:
+                progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
+                ds = utils.load_hf_dataset(dataset_name, limit=limit)
+                cache_dataset(dataset_name, limit, ds)
+                progress(0.05, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
+
+            progress(0.05, desc=f"{step_desc}: апрацоўка ўсіх {len(ds)} запісаў...")
+
+            for idx, item in enumerate(ds):
+                progress(0.05 + (idx + 1) / len(ds) * 0.20, desc=f"{step_desc}: файл {idx+1}/{len(ds)}")
+
+                audio_data = item['audio']['array']
+                sampling_rate = item['audio']['sampling_rate']
+                ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+
+                hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+                results.append({
+                    "id": idx,
+                    "path": item['audio']['path'],
+                    "ref_text": ref_text,
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp,
+                    "audio_array": audio_data,
+                    "sampling_rate": sampling_rate,
+                    "model_used": model_name,
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                })
+
+        # STEP 2-4: Iterative improvement
+        # Logic remains mostly the same, but we should respect 'verification_status' != 'correct'
         base_progress = 0.25
         step_progress_size = 0.25
 
@@ -361,7 +544,12 @@ def run_smart_analysis(
             model_name = models[step_idx][0]
             step_desc = models[step_idx][1]
 
-            problematic_indices = [i for i, r in enumerate(results) if r['score'] < similarity_threshold]
+            # Find items that are STILL problematic AND not verified correct
+            problematic_indices = [
+                i for i, r in enumerate(results) 
+                if r['score'] < similarity_threshold 
+                and r.get('verification_status') != 'correct'
+            ]
 
             if not problematic_indices:
                 progress(base_progress + step_idx * step_progress_size,
@@ -376,9 +564,12 @@ def run_smart_analysis(
                          desc=f"{step_desc}: запіс {j+1}/{len(problematic_indices)}")
 
                 result = results[res_idx]
-                audio_data = result['audio_array']
-                sampling_rate = result['sampling_rate']
-                ref_text = result['ref_text']
+                audio_data = result.get('audio_array') # use get()
+                sampling_rate = result.get('sampling_rate')
+                ref_text = result.get('ref_text', "")
+                
+                if audio_data is None or len(audio_data) == 0:
+                    continue
 
                 hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
@@ -401,16 +592,23 @@ def run_smart_analysis(
         raise gr.Error(f"Памылка: {e}")
 
 
+
+
+
 def get_audio_for_row(row_index: int):
     global global_results
     if row_index < 0 or row_index >= len(global_results):
         return None
 
     row = global_results[row_index]
+    if row.get('audio_array') is None or len(row.get('audio_array')) == 0:
+        return None
+
     buffer = io.BytesIO()
-    sf.write(buffer, row['audio_array'], row['sampling_rate'], format='WAV')
+    sr = int(float(row['sampling_rate'])) if pd.notnull(row.get('sampling_rate')) else 16000
+    sf.write(buffer, row['audio_array'], sr, format='WAV')
     buffer.seek(0)
-    return (row['sampling_rate'], np.array(row['audio_array']))
+    return (sr, np.array(row['audio_array']))
 
 
 def update_thinking_visibility(model_name: str):
@@ -435,6 +633,107 @@ def get_cache_status():
     return f"<p style='color: #60a5fa;'>📦 Закэшавана: {len(dataset_cache)} датасет(аў), {total_items} элементаў</p>"
 
 
+def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_files):
+    global global_results
+    
+    # Robust type conversion
+    limit_files = int(float(limit_files)) if limit_files else 0
+    similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
+
+    if file_obj is None:
+        return generate_dashboard_outputs(similarity_threshold)
+    
+    try:
+        # Load CSV
+        df = pd.read_csv(file_obj.name)
+        
+        # Check required columns (flexible check)
+        # The user provided: idx,file_name,score_%,ref,hyp
+        # We should support this specific format.
+        
+        # Map columns if needed
+        col_map = {
+            'score_%': 'score',
+            'file_name': 'path',
+            'ref': 'ref_text',
+            'hyp': 'hyp_text',
+            'idx': 'id'
+        }
+        
+        # Check if we have the specific columns requested
+        user_cols = ['idx', 'file_name', 'score_%', 'ref', 'hyp']
+        # If all user_cols are present, we are good. If not, we try to survive.
+        
+        # Try to load audio from dataset cache if available
+        audio_map = {}
+        limit = None # Ignore limit when importing to find all matching audio
+        cached_ds = get_cached_dataset(dataset_name, limit)
+        
+        if cached_ds:
+             for item in cached_ds:
+                 path = item['audio']['path']
+                 if path:
+                     fname = os.path.basename(path)
+                     audio_map[fname] = item
+                     audio_map[path] = item # Store both full path and basename
+
+        results = []
+        for idx, row in df.iterrows():
+            # Get values using the specific column names
+            fname = str(row.get('file_name', row.get('path', '')))
+            ref = str(row.get('ref', row.get('ref_text', '')))
+            hyp = str(row.get('hyp', row.get('hyp_text', '')))
+            
+            # Handle score: convert "91.67" or "91,67" to float
+            score_val = row.get('score_%', row.get('score', 0))
+            if isinstance(score_val, str):
+                score_val = score_val.replace(',', '.')
+            try:
+                score = float(score_val)
+            except:
+                score = 0.0
+            
+            row_id = row.get('idx', row.get('id', idx))
+
+            # Find audio
+            audio_array = None
+            sampling_rate = None
+            
+            # Try exact match or basename match
+            item = audio_map.get(fname)
+            if not item and fname:
+                # Try basename if fname looks like a path
+                item = audio_map.get(os.path.basename(fname))
+            
+            if item:
+                 audio_array = item['audio']['array']
+                 sampling_rate = item['audio']['sampling_rate']
+
+            # Normalize using utils
+            norm_ref = utils.normalize_text(ref)
+            norm_hyp = utils.normalize_text(hyp)
+
+            results.append({
+                "id": int(row_id) if isinstance(row_id, (int, float, str)) and str(row_id).isdigit() else idx,
+                "path": fname,
+                "ref_text": ref,
+                "hyp_text": hyp,
+                "score": score,
+                "norm_ref": norm_ref,
+                "norm_hyp": norm_hyp,
+                "audio_array": audio_array,
+                "sampling_rate": sampling_rate,
+                "model_used": "imported_csv",
+                "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+            })
+            
+        global_results = results
+        return generate_dashboard_outputs(similarity_threshold)
+        
+    except Exception as e:
+        raise gr.Error(f"Памылка імпарту: {e}")
+
+
 def _find_index_by_id(record_id: int):
     """Find index in global_results by record['id'] (not by list position)."""
     global global_results
@@ -450,6 +749,7 @@ def verify_action(data_str, similarity_threshold):
     Expects JSON like: {"id": 12, "status": "correct", "ts": 123456}
     """
     global global_results
+    similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
 
     # Always return a refreshed dashboard even if parsing fails
     if not data_str:
@@ -743,7 +1043,7 @@ with gr.Blocks(
 
             limit_files = gr.Number(
                 label="Ліміт файлаў (0 = усе)",
-                value=10,
+                value=1,
                 minimum=0,
                 step=1
             )
@@ -754,7 +1054,7 @@ with gr.Blocks(
                 label="Temperature",
                 minimum=0.0,
                 maximum=2.0,
-                value=1.0,
+                value=0.3,
                 step=0.1
             )
 
@@ -770,7 +1070,7 @@ with gr.Blocks(
                 label="Парог несупадзенняў (%)",
                 minimum=0,
                 maximum=100,
-                value=90,
+                value=99,
                 step=1,
                 info="Файлы з скорам ніжэй будуць пазначаны"
             )
@@ -787,13 +1087,31 @@ with gr.Blocks(
                 elem_classes=["smart-btn"]
             )
 
+            recheck_problematic = gr.Checkbox(
+                label="Пераправерыць толькі праблемныя файлы",
+                value=False,
+                info="Калі ўключана, аналіз будзе запускацца толькі для файлаў з нізкім рэйтынгам."
+            )
+
+            stop_btn = gr.Button(
+                "🛑 Спыніць аналіз",
+                variant="stop",
+                elem_classes=["stop-btn"],
+                visible=True
+            )
+
             gr.HTML(
                 "<small style='color: #94a3b8;'>🧠 Разумны аналіз выкарыстоўвае 3 мадэлі паслядоўна: "
                 "Flash-Lite → Flash → Gemini-3-Flash</small>",
                 sanitize=False
             )
 
-            gr.Markdown("### 💾 Кэш")
+            gr.Markdown("### � Імпарт CSV")
+            with gr.Row():
+                import_file = gr.File(label="Загрузіць CSV", file_types=[".csv"])
+                import_btn = gr.Button("📥 Імпартаваць", variant="secondary")
+
+            gr.Markdown("### �💾 Кэш")
             cache_status = gr.HTML(value="<p style='color: #94a3b8;'>📭 Кэш пусты</p>", sanitize=False)
             clear_cache_btn = gr.Button("🗑️ Ачысціць кэш датасету", size="sm")
 
@@ -828,24 +1146,35 @@ with gr.Blocks(
         outputs=[thinking_budget]
     )
 
-    analyze_btn.click(
+    analyze_event = analyze_btn.click(
         fn=run_analysis,
-        inputs=[api_key, dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold],
+        inputs=[api_key, dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold, recheck_problematic],
         outputs=[stats_output, flagged_output, results_table]
-    ).then(
+    )
+    
+    analyze_event.then(
         fn=get_cache_status,
         inputs=[],
         outputs=[cache_status]
     )
 
-    smart_analyze_btn.click(
+    smart_analyze_event = smart_analyze_btn.click(
         fn=run_smart_analysis,
-        inputs=[api_key, dataset_name, limit_files, temperature, thinking_budget, similarity_threshold],
+        inputs=[api_key, dataset_name, limit_files, temperature, thinking_budget, similarity_threshold, recheck_problematic],
         outputs=[stats_output, flagged_output, results_table]
-    ).then(
+    )
+    
+    smart_analyze_event.then(
         fn=get_cache_status,
         inputs=[],
         outputs=[cache_status]
+    )
+
+    stop_btn.click(
+        fn=None,
+        inputs=None,
+        outputs=None,
+        cancels=[analyze_event, smart_analyze_event]
     )
 
     download_btn.click(
@@ -858,6 +1187,12 @@ with gr.Blocks(
         fn=clear_cache,
         inputs=[],
         outputs=[cache_status]
+    )
+
+    import_btn.click(
+        fn=import_csv_analysis,
+        inputs=[import_file, similarity_threshold, dataset_name, limit_files],
+        outputs=[stats_output, flagged_output, results_table]
     )
 
     # Verification event

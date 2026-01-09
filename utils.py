@@ -111,7 +111,11 @@ def transcribe_audio(client, model_name, audio_array, sampling_rate, config=None
     
     # Create an in-memory byte buffer
     audio_buffer = io.BytesIO()
-    sf.write(audio_buffer, audio_array, sampling_rate, format='WAV')
+    try:
+        sr = int(float(sampling_rate)) if sampling_rate is not None else 16000
+    except (ValueError, TypeError):
+        sr = 16000
+    sf.write(audio_buffer, audio_array, sr, format='WAV')
     audio_bytes = audio_buffer.getvalue()
     
     last_error = None
