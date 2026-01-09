@@ -132,7 +132,20 @@ def generate_dashboard_outputs(similarity_threshold: int):
         """
     else:
         flagged_html = ""
-        for _, row in flagged_df.iterrows():
+        # LIMIT displayed bad files to prevent Browser Crash (OOM)
+        max_display = 50
+        
+        if len(flagged_df) > max_display:
+            flagged_html += f"""
+            <div style="background: #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white; text-align: center;">
+                ⚠️ Паказана першыя {max_display} з {len(flagged_df)} праблемных файлаў, каб пазбегнуць перагрузкі браўзера.
+            </div>
+            """
+        
+        for i, (_, row) in enumerate(flagged_df.iterrows()):
+            if i >= max_display:
+                break
+                
             rid = int(row['id']) if pd.notnull(row.get('id')) else -1
             score = float(row['score']) if pd.notnull(row.get('score')) else 0.0
             score_int = int(round(score))
@@ -310,6 +323,18 @@ def run_analysis(
                 if audio_data is None or len(audio_data) == 0:
                     path = result.get('path', '')
                     item = audio_map.get(path) or audio_map.get(os.path.basename(path))
+                    
+                    # Fallback: try to find by ID if path lookup failed
+                    if not item:
+                        rec_id = result.get('id')
+                        if rec_id is not None:
+                            try:
+                                rec_id = int(rec_id)
+                                if 0 <= rec_id < len(ds):
+                                    item = ds[rec_id]
+                            except:
+                                pass
+
                     if item:
                         audio_data = item['audio']['array']
                         sampling_rate = item['audio']['sampling_rate']
@@ -317,10 +342,13 @@ def run_analysis(
                         global_results[idx]['audio_array'] = audio_data
                         global_results[idx]['sampling_rate'] = sampling_rate
                     else:
+                        print(f"Propblematic Recheck: Skipping index {idx}, path '{path}', id {result.get('id')}: Audio not found in dataset.")
                         continue  # Skip if audio still not found
 
                 hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+                print(f"🔄 Updated: {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
 
                 global_results[idx].update({
                     "hyp_text": hyp_text,
@@ -474,6 +502,18 @@ def run_smart_analysis(
                 if audio_data is None or len(audio_data) == 0:
                     path = result.get('path', '')
                     item = audio_map.get(path) or audio_map.get(os.path.basename(path))
+
+                    # Fallback: try to find by ID if path lookup failed
+                    if not item:
+                        rec_id = result.get('id')
+                        if rec_id is not None:
+                            try:
+                                rec_id = int(rec_id)
+                                if 0 <= rec_id < len(ds):
+                                    item = ds[rec_id]
+                            except:
+                                pass
+
                     if item:
                         audio_data = item['audio']['array']
                         sampling_rate = item['audio']['sampling_rate']
@@ -481,10 +521,13 @@ def run_smart_analysis(
                         results[res_idx]['audio_array'] = audio_data
                         results[res_idx]['sampling_rate'] = sampling_rate
                     else:
-                        continue  # Skip if audio still not found
+                         print(f"Smart Analysis Recheck: Skipping index {res_idx}, path '{path}', id {result.get('id')}: Audio not found.")
+                         continue  # Skip if audio still not found
 
                 hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+                print(f"🔄 Smart Updated (Step 1): {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
 
                 results[res_idx].update({
                     "hyp_text": hyp_text,
@@ -574,8 +617,21 @@ def run_smart_analysis(
                 hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
+                # Use explicit variable for update decision
+                should_update = False
+                
+                # Condition 1: Score improved
                 if score > result['score']:
+                    should_update = True
+                
+                # Condition 2: Score is sufficient to be marked 'correct' (and it wasn't before)
+                # This fixes the case where a "fake" 100% (marked incorrect/problematic) is replaced by a real 90%
+                elif score >= similarity_threshold:
+                    should_update = True
+
+                if should_update:
                     new_status = "correct" if score >= similarity_threshold else "incorrect"
+                    print(f"✅ UPDATE APPLIED [Idx={res_idx}]: {result.get('path')}")
                     results[res_idx].update({
                         "hyp_text": hyp_text,
                         "score": score,
@@ -584,6 +640,8 @@ def run_smart_analysis(
                         "model_used": model_name,
                         "verification_status": new_status
                     })
+                else:
+                    print(f"⏭️ SKIP UPDATE [Idx={res_idx}]: New score {score} is not better than {result.get('score')} and not meeting threshold {similarity_threshold}")
 
         global_results = results
         return generate_dashboard_outputs(similarity_threshold)
@@ -647,27 +705,65 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
         # Load CSV
         df = pd.read_csv(file_obj.name)
         
-        # Check required columns (flexible check)
-        # The user provided: idx,file_name,score_%,ref,hyp
-        # We should support this specific format.
+        # Deduplicate based on file_name or path if present
+        # Prefer 'file_name' then 'path'
+        dedup_col = None
+        if 'file_name' in df.columns:
+            dedup_col = 'file_name'
+        elif 'path' in df.columns:
+            dedup_col = 'path'
+            
+        if dedup_col:
+            initial_len = len(df)
+            df = df.drop_duplicates(subset=[dedup_col])
+            if len(df) < initial_len:
+                print(f"Import CSV: Removed {initial_len - len(df)} duplicate rows based on '{dedup_col}'.")
         
-        # Map columns if needed
-        col_map = {
-            'score_%': 'score',
-            'file_name': 'path',
-            'ref': 'ref_text',
-            'hyp': 'hyp_text',
-            'idx': 'id'
-        }
+        # Standardize column names based on known formats
+        # Priority 1: Exported format columns: id, path, ref_text, hyp_text, score, norm_ref, norm_hyp, model_used, verification_status
+        # Priority 2: Simple/Ad-hoc format: idx, file_name, score_%, ref, hyp
         
-        # Check if we have the specific columns requested
-        user_cols = ['idx', 'file_name', 'score_%', 'ref', 'hyp']
-        # If all user_cols are present, we are good. If not, we try to survive.
+        rename_map = {}
+        # Mapping definition
+        if 'file_name' in df.columns and 'path' not in df.columns:
+            rename_map['file_name'] = 'path'
+        if 'idx' in df.columns and 'id' not in df.columns:
+            rename_map['idx'] = 'id'
+        if 'score_%' in df.columns and 'score' not in df.columns:
+             rename_map['score_%'] = 'score'
+        if 'ref' in df.columns and 'ref_text' not in df.columns:
+             rename_map['ref'] = 'ref_text'
+        if 'hyp' in df.columns and 'hyp_text' not in df.columns:
+             rename_map['hyp'] = 'hyp_text'
+             
+        if rename_map:
+            df = df.rename(columns=rename_map)
         
         # Try to load audio from dataset cache if available
         audio_map = {}
         limit = None # Ignore limit when importing to find all matching audio
         cached_ds = get_cached_dataset(dataset_name, limit)
+
+        if not cached_ds:
+             try:
+                 print(f"Importing CSV: Loading dataset '{dataset_name}' to link audio (filtered)...")
+                 
+                 # Collect target filenames to avoid loading full dataset and crashing memory
+                 target_paths = set()
+                 for _, r_row in df.iterrows():
+                     # Use 'path' column as primary source for filename
+                     fname_t = str(r_row.get('path', ''))
+                     if fname_t:
+                         target_paths.add(fname_t)
+                         target_paths.add(os.path.basename(fname_t))
+                 
+                 ds = utils.load_hf_dataset(dataset_name, limit=limit, allowed_paths=target_paths)
+                 # We simply use this partial dataset to populate audio_map. 
+                 # We do NOT cache it globally as 'full' dataset because it's partial.
+                 cached_ds = ds 
+             except Exception as e:
+                 print(f"Warning: Could not load dataset '{dataset_name}' during import: {e}")
+                 cached_ds = []
         
         if cached_ds:
              for item in cached_ds:
@@ -676,16 +772,51 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
                      fname = os.path.basename(path)
                      audio_map[fname] = item
                      audio_map[path] = item # Store both full path and basename
+        else:
+             # Load dataset if not cached to ensure audio is available (fallback)
+             try:
+                 print(f"Importing CSV: Loading dataset '{dataset_name}' to link audio...")
+                 ds = utils.load_hf_dataset(dataset_name, limit=limit)
+                 cache_dataset(dataset_name, limit, ds)
+                 for item in ds:
+                     path = item['audio']['path']
+                     if path:
+                         fname = os.path.basename(path)
+                         audio_map[fname] = item
+                         audio_map[path] = item
+             except Exception as e:
+                 print(f"Warning: Could not load dataset '{dataset_name}' during import: {e}")
 
         results = []
+        
+        # Helper to safely get string from potential NaN
+        def safe_str(val, default=''):
+            if pd.isna(val): return default
+            return str(val)
+
         for idx, row in df.iterrows():
-            # Get values using the specific column names
-            fname = str(row.get('file_name', row.get('path', '')))
-            ref = str(row.get('ref', row.get('ref_text', '')))
-            hyp = str(row.get('hyp', row.get('hyp_text', '')))
+            # Get values using standard column names (after rename)
+            fname = safe_str(row.get('path', ''))
+            ref = safe_str(row.get('ref_text', ''))
+            hyp = safe_str(row.get('hyp_text', ''))
+            norm_ref = safe_str(row.get('norm_ref', ''))
+            norm_hyp = safe_str(row.get('norm_hyp', ''))
+
+            # Auto-calculate normalization if missing (for old CSV support)
+            if not norm_ref and ref:
+                norm_ref = utils.normalize_text(ref)
+            if not norm_hyp and hyp:
+                norm_hyp = utils.normalize_text(hyp)
+            model_used_val = row.get('model_used')
+            # If model_used is nan, decide default: 'imported_csv'
+            model_used = safe_str(model_used_val, 'imported_csv')
+            
+            verification_status_val = row.get('verification_status')
+            # If status is nan, decide default: 'unknown'
+            verification_status = safe_str(verification_status_val, 'unknown')
             
             # Handle score: convert "91.67" or "91,67" to float
-            score_val = row.get('score_%', row.get('score', 0))
+            score_val = row.get('score', 0)
             if isinstance(score_val, str):
                 score_val = score_val.replace(',', '.')
             try:
@@ -693,7 +824,7 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             except:
                 score = 0.0
             
-            row_id = row.get('idx', row.get('id', idx))
+            row_id = row.get('id', idx)
 
             # Find audio
             audio_array = None
@@ -701,37 +832,39 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             
             # Try exact match or basename match
             item = audio_map.get(fname)
-            if not item and fname:
-                # Try basename if fname looks like a path
-                item = audio_map.get(os.path.basename(fname))
+            if not item:
+                 item = audio_map.get(os.path.basename(fname))
             
             if item:
-                 audio_array = item['audio']['array']
-                 sampling_rate = item['audio']['sampling_rate']
-
-            # Normalize using utils
-            norm_ref = utils.normalize_text(ref)
-            norm_hyp = utils.normalize_text(hyp)
-
+                audio_array = item['audio']['array']
+                sampling_rate = item['audio']['sampling_rate']
+            
+            # Append result with all metadata
             results.append({
-                "id": int(row_id) if isinstance(row_id, (int, float, str)) and str(row_id).isdigit() else idx,
+                "id": int(row_id) if pd.notnull(row_id) else idx,
                 "path": fname,
+                "score": score,
                 "ref_text": ref,
                 "hyp_text": hyp,
-                "score": score,
-                "norm_ref": norm_ref,
-                "norm_hyp": norm_hyp,
                 "audio_array": audio_array,
                 "sampling_rate": sampling_rate,
-                "model_used": "imported_csv",
-                "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                "status": "processed",
+                # Restore Verification Status and Model Used
+                "verification_status": verification_status,
+                "model_used": model_used,
+                "norm_ref": norm_ref,
+                "norm_hyp": norm_hyp
             })
             
         global_results = results
+        print(f"Imported {len(results)} results from CSV.")
         return generate_dashboard_outputs(similarity_threshold)
         
     except Exception as e:
-        raise gr.Error(f"Памылка імпарту: {e}")
+        print(f"Error importing CSV: {e}")
+        # Return empty outputs on error
+        return "", "", pd.DataFrame()
+
 
 
 def _find_index_by_id(record_id: int):
