@@ -1,4 +1,5 @@
 import re
+import os
 import io
 import time
 import random
@@ -137,7 +138,13 @@ def transcribe_audio(client, model_name, audio_array, sampling_rate, config=None
                 model=model_name,
                 contents=[
                     genai.types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"),
-                    "Transcribe the following audio exactly as spoken in belarusian. Output ONLY the transcription."
+                    """You are a transcription engine.
+                        Transcribe the following audio verbatim in Belarusian.
+                        This audio is a fragment of an audiobook and may start or end mid-sentence.
+                        Preserve exact wording, punctuation, repetitions, pauses, and incomplete or cut-off phrases.
+                        Do NOT correct grammar, normalize text, or improve style.
+                        Do NOT add explanations, timestamps, speaker labels, or any extra text.
+                        Output ONLY the raw transcription."""
                 ],
                 config=config
             )

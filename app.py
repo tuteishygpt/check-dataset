@@ -11,6 +11,10 @@ import numpy as np
 import hashlib
 import base64
 import html
+import re
+from datasets import Dataset, Audio, Features, Value
+from huggingface_hub import login, HfApi
+
 
 # Load environment variables
 load_dotenv()
@@ -20,6 +24,16 @@ global_results = []
 
 # Cache for downloaded datasets
 dataset_cache = {}
+
+def sanitize_filename(name):
+    """Sanitize string to be used as a filename."""
+    if not name:
+        return "results"
+    # Replace non-alphanumeric with undersore
+    s = re.sub(r'[^\w\s-]', '_', name).strip().lower()
+    # Replace whitespace with underscore
+    s = re.sub(r'[-\s]+', '_', s)
+    return s
 
 
 def select_best_model_result(model_results: dict, similarity_threshold: int = 90):
@@ -405,6 +419,7 @@ def generate_dashboard_outputs(similarity_threshold: int):
                         <span style="background: {pair_sim_bg}; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">{int(pair_sim)}%</span>
                     </p>
                     <p style="color: #93c5fd; margin: 0; font-family: monospace; font-weight: bold;">{_e(best_hyp_pair)}</p>
+                    <button type="button" onclick="verifyRecord({rid}, 'update_match')" class="verify-btn" style="background: #3b82f6; margin-top: 10px; width: 100%; font-size: 0.9em;">📝 Замяніць арыгінал і пацвердзіць</button>
                 </div>
                 """
             elif model_results and len(model_results) == 1:
@@ -422,6 +437,7 @@ def generate_dashboard_outputs(similarity_threshold: int):
                         <span style="background: {score_bg}; color: white; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">{int(score)}%</span>
                     </p>
                     <p style="color: #93c5fd; margin: 0; font-family: monospace; font-weight: bold;">{_e(hyp)}</p>
+                    <button type="button" onclick="verifyRecord({rid}, 'update_match')" class="verify-btn" style="background: #3b82f6; margin-top: 10px; width: 100%; font-size: 0.9em;">📝 Замяніць арыгінал і пацвердзіць</button>
                 </div>
                 """
             
@@ -1143,11 +1159,9 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             norm_ref = safe_str(row.get('norm_ref', ''))
             norm_hyp = safe_str(row.get('norm_hyp', ''))
 
-            # Auto-calculate normalization if missing (for old CSV support)
-            if not norm_ref and ref:
-                norm_ref = utils.normalize_text(ref)
-            if not norm_hyp and hyp:
-                norm_hyp = utils.normalize_text(hyp)
+            # Calculate similarity and normalization using the standard function
+            score, norm_ref, norm_hyp = utils.calculate_similarity(ref, hyp)
+
             model_used_val = row.get('model_used')
             # If model_used is nan, decide default: 'imported_csv'
             model_used = safe_str(model_used_val, 'imported_csv')
@@ -1156,14 +1170,11 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             # If status is nan, decide default: 'unknown'
             verification_status = safe_str(verification_status_val, 'unknown')
             
-            # Handle score: convert "91.67" or "91,67" to float
-            score_val = row.get('score', 0)
-            if isinstance(score_val, str):
-                score_val = score_val.replace(',', '.')
-            try:
-                score = float(score_val)
-            except:
-                score = 0.0
+            # Apply automatic verification based on threshold
+            # "калі гэты тэкст праходзіць па зададзенаму 'Парог несупадзенняў (%)' то адзначаць, што запіс карэктны"
+            # Use rounded score to match UI display (e.g. 98.6% -> 99% should pass 99% threshold)
+            if int(round(score)) >= similarity_threshold:
+                verification_status = 'correct'
             
             row_id = row.get('id', idx)
 
@@ -1254,21 +1265,64 @@ def verify_action(data_str, similarity_threshold, dataset_name):
         record_id = data.get('id')
         status = data.get('status')
 
-        if record_id is None or status not in ("correct", "incorrect"):
+        if record_id is None:
+            return generate_dashboard_outputs(similarity_threshold)
+
+        if status not in ("correct", "incorrect", "update_match"):
             return generate_dashboard_outputs(similarity_threshold)
 
         idx = _find_index_by_id(int(record_id))
         if idx is None:
             return generate_dashboard_outputs(similarity_threshold)
 
-        global_results[idx]['verification_status'] = status
-        global_results[idx]['model_used'] = 'manual'
+        if status == 'update_match':
+            # Logic to find best text and update reference
+            record = global_results[idx]
+            model_results = record.get('model_results', {})
+            ref_text = record.get('ref_text', '')
+            best_text = ""
+            
+            if model_results:
+                if len(model_results) >= 2:
+                    best_pair = find_best_model_pair(record, ref_text)
+                    if best_pair:
+                        best_text = best_pair.get('best_hyp', '')
+                    else:
+                         best_model, best_res = select_best_model_result(model_results)
+                         if best_res:
+                            best_text = best_res.get('hyp_text', '')
+                else:
+                    best_model, best_res = select_best_model_result(model_results)
+                    if best_res:
+                        best_text = best_res.get('hyp_text', '')
+            
+            if best_text:
+                global_results[idx]['ref_text'] = best_text
+                global_results[idx]['verification_status'] = 'correct'
+                global_results[idx]['model_used'] = 'manual'
+                
+                # Recalculate scores against new reference
+                for m_name, m_res in model_results.items():
+                    hyp = m_res.get('hyp_text', '')
+                    new_score, _, _ = utils.calculate_similarity(best_text, hyp)
+                    global_results[idx]['model_results'][m_name]['score'] = new_score
+                
+                # Update main score
+                best_model, best_res_new = select_best_model_result(global_results[idx]['model_results'])
+                if best_res_new:
+                    global_results[idx]['score'] = best_res_new['score']
+                    global_results[idx]['hyp_text'] = best_res_new['hyp_text']
+        else:
+            global_results[idx]['verification_status'] = status
+            global_results[idx]['model_used'] = 'manual'
 
         # Persist to CSV (best effort)
         try:
             save_df = pd.DataFrame(global_results)
-            clean_name = dataset_name.replace("/", "_").replace("\\", "_").replace(":", "_")
-            save_df.to_csv(f"{clean_name}_results.csv", index=False)
+            clean_name = sanitize_filename(dataset_name)
+            save_path = f"{clean_name}_results.csv"
+            save_df.to_csv(save_path, index=False)
+            print(f"✅ Auto-saved results to {save_path}")
         except Exception as e:
             print(f"Error saving to CSV: {e}")
 
@@ -1299,9 +1353,12 @@ def save_results_csv(dataset_name):
         df_export = pd.DataFrame(export_data)
         
         # Асноўны файл
-        clean_name = dataset_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+        clean_name = sanitize_filename(dataset_name)
         filename = f"{clean_name}_results.csv"
-        df_export.to_csv(filename, index=False)
+        abs_path = os.path.abspath(filename)
+        df_export.to_csv(abs_path, index=False)
+        print(f"💾 Exporting main CSV: {abs_path}")
+
         
         # Стварыць падрабязны файл з параўнаннем мадэлей
         detailed_data = []
@@ -1323,13 +1380,122 @@ def save_results_csv(dataset_name):
         if detailed_data:
             df_detailed = pd.DataFrame(detailed_data)
             detailed_filename = f"{clean_name}_model_comparison.csv"
-            df_detailed.to_csv(detailed_filename, index=False)
-            print(f"Created detailed model comparison file: {detailed_filename}")
+            detailed_abs_path = os.path.abspath(detailed_filename)
+            df_detailed.to_csv(detailed_abs_path, index=False)
+            print(f"💾 Exporting detailed CSV: {detailed_abs_path}")
         
-        return filename
+        return abs_path
+
     except Exception as e:
         print(f"Error creating CSV: {e}")
         return None
+
+
+def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
+    """
+    Creates a new dataset on Hugging Face using only verified records.
+    Name of the new dataset is {dataset_name}Checked.
+    """
+    global global_results
+    
+    if not hf_token:
+        raise gr.Error("Калі ласка, увядзіце Hugging Face Token.")
+    
+    if not global_results:
+        raise gr.Error("Няма даных для стварэння датасэта.")
+
+    # Filter correct results
+    verified_data = [r for r in global_results if r.get('verification_status') == 'correct']
+    
+    if not verified_data:
+        raise gr.Error("Няма правераных (correct) запісаў для стварэння датасэта.")
+
+    try:
+        login(token=hf_token)
+        
+        # Generator for the new dataset
+        def gen():
+            # Create a map for quick lookup if we need to fall back to the original dataset
+            ds_ref = None
+            
+            for i, row in enumerate(verified_data):
+                audio_array = row.get('audio_array')
+                sr = row.get('sampling_rate')
+                
+                # Logic to ensure we have audio
+                if audio_array is None or len(audio_array) == 0:
+                     if ds_ref is None:
+                         progress(0, desc="Загрузка арыгінальнага датасэта для атрымання аўдыя...")
+                         try:
+                            # Collect all needed paths first to optimize loading
+                            needed_paths = set()
+                            for r in verified_data:
+                                if r.get('audio_array') is None or len(r.get('audio_array')) == 0:
+                                    p = r.get('path')
+                                    if p:
+                                        needed_paths.add(p)
+                                        needed_paths.add(os.path.basename(p))
+                            
+                            if needed_paths:
+                                full_ds_items = utils.load_hf_dataset(dataset_name, allowed_paths=needed_paths)
+                                ds_map = {}
+                                for item in full_ds_items:
+                                    p = item['audio']['path']
+                                    if p:
+                                        ds_map[p] = item
+                                        ds_map[os.path.basename(p)] = item
+                                ds_ref = ds_map
+                            else:
+                                ds_ref = {} # No missing audio needed to load
+
+                         except Exception as e:
+                             print(f"Failed to load original dataset for audio fallback: {e}")
+                             ds_ref = {}
+
+                     path = row.get('path')
+                     item = None
+                     if ds_ref:
+                        item = ds_ref.get(path) or ds_ref.get(os.path.basename(path))
+                     
+                     if item:
+                         audio_array = item['audio']['array']
+                         sr = item['audio']['sampling_rate']
+                
+                if audio_array is not None and len(audio_array) > 0:
+                     # Manually encode to WAV bytes to avoid dependency on torch/librosa within datasets library
+                     buffer = io.BytesIO()
+                     # Ensure sampling_rate is integer
+                     safe_sr = int(float(sr)) if sr else 16000
+                     sf.write(buffer, audio_array, safe_sr, format='WAV')
+                     audio_bytes = buffer.getvalue()
+                     
+                     yield {
+                         "audio": {"bytes": audio_bytes, "path": None},
+                         "text": row.get('ref_text', ''),
+                         "original_path": row.get('path', '')
+                     }
+        
+        # Define features
+        features = Features({
+            "audio": Audio(sampling_rate=16000), 
+            "text": Value("string"),
+            "original_path": Value("string")
+        })
+        
+        new_ds = Dataset.from_generator(gen, features=features)
+        
+        if len(new_ds) == 0:
+             raise gr.Error("Не ўдалося сабраць аўдыяданыя для правераных запісаў.")
+
+        new_name = dataset_name + "Checked"
+        progress(0.9, desc=f"Загрузка датасэта '{new_name}' на Hugging Face...")
+        
+        new_ds.push_to_hub(new_name, token=hf_token)
+        
+        return f"✅ Датасэт паспяхова створаны: https://huggingface.co/datasets/{new_name}"
+
+    except Exception as e:
+        raise gr.Error(f"Памылка стварэння датасэта: {e}")
 
 
 # CSS for dark theme and modern styling
@@ -1515,12 +1681,36 @@ head_js = """
     return true;
   }
 
+  // localStorage HF Token persistence
+  function setupHfTokenSaver() {
+    const el = getValueEl("hf_token_input");
+    if (!el) return false;
+
+    const saved = localStorage.getItem("hf_token");
+    if (saved && !el.value) {
+      el.value = saved;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    if (!el.__hfSaverAttached) {
+      el.addEventListener("blur", function () {
+        if (this.value && this.value.length > 5) {
+          localStorage.setItem("hf_token", this.value);
+        }
+      });
+      el.__hfSaverAttached = true;
+    }
+    return true;
+  }
+
   // retry a few times because Gradio renders async
   let tries = 0;
   const timer = setInterval(() => {
     tries += 1;
     const ok = setupApiKeySaver();
-    if (ok || tries >= 40) clearInterval(timer);
+    const ok2 = setupHfTokenSaver();
+    if ((ok && ok2) || tries >= 40) clearInterval(timer);
   }, 250);
 
 })();
@@ -1548,6 +1738,13 @@ with gr.Blocks(
                 value=os.getenv("GOOGLE_API_KEY", ""),
                 placeholder="Увядзіце ваш API ключ...",
                 elem_id="api_key_input"
+            )
+
+            hf_token = gr.Textbox(
+                label="Hugging Face Token",
+                type="password",
+                placeholder="Увядзіце ваш HF Token (для стварэння датасэту)...",
+                elem_id="hf_token_input"
             )
 
             dataset_name = gr.Textbox(
@@ -1663,6 +1860,10 @@ with gr.Blocks(
             with gr.Row():
                 download_btn = gr.Button("💾 Спампаваць вынікі (CSV)", size="lg")
                 download_file = gr.File(label="Файл вынікаў", file_count="single")
+            
+            with gr.Row():
+                create_ds_btn = gr.Button("🤗 Стварыць праверыны датасэт", variant="primary")
+                create_ds_output = gr.Markdown()
 
             # Hidden components for JS->Python communication (rendered, but moved offscreen via CSS)
             verification_data = gr.Textbox(elem_id="verification_data_input", visible=True)
@@ -1722,6 +1923,12 @@ with gr.Blocks(
         fn=import_csv_analysis,
         inputs=[import_file, similarity_threshold, dataset_name, limit_files],
         outputs=[stats_output, flagged_output, results_table]
+    )
+
+    create_ds_btn.click(
+        fn=create_verified_dataset,
+        inputs=[hf_token, dataset_name],
+        outputs=[create_ds_output]
     )
 
     # Verification event
