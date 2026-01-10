@@ -22,6 +22,182 @@ global_results = []
 dataset_cache = {}
 
 
+def select_best_model_result(model_results: dict, similarity_threshold: int = 90):
+    """
+    Параўноўвае вынікі ўсіх мадэлей і выбірае лепшы вынік.
+    
+    Args:
+        model_results: Слоўнік {model_name: {"hyp_text": ..., "score": ..., "norm_ref": ..., "norm_hyp": ...}}
+        similarity_threshold: Парог для вызначэння карэктнасці
+    
+    Returns:
+        Tuple (best_model_name, best_result_dict)
+    """
+    if not model_results:
+        return None, None
+    
+    best_model = None
+    best_result = None
+    best_score = -1
+    
+    for model_name, result in model_results.items():
+        score = result.get('score', 0)
+        if score > best_score:
+            best_score = score
+            best_model = model_name
+            best_result = result
+    
+    return best_model, best_result
+
+
+def compare_two_models(model_results: dict, model1: str, model2: str):
+    """
+    Параўноўвае вынікі двух канкрэтных мадэлей.
+    
+    Args:
+        model_results: Слоўнік з вынікамі ўсіх мадэлей
+        model1: Назва першай мадэлі
+        model2: Назва другой мадэлі
+    
+    Returns:
+        Слоўнік з параўнаннем: {"model1": ..., "model2": ..., "winner": ..., "score_diff": ...}
+    """
+    result1 = model_results.get(model1)
+    result2 = model_results.get(model2)
+    
+    if not result1 and not result2:
+        return {"error": "Абедзве мадэлі не знойдзены"}
+    if not result1:
+        return {"winner": model2, "model1": None, "model2": result2, "score_diff": None}
+    if not result2:
+        return {"winner": model1, "model1": result1, "model2": None, "score_diff": None}
+    
+    score1 = result1.get('score', 0)
+    score2 = result2.get('score', 0)
+    score_diff = abs(score1 - score2)
+    
+    if score1 > score2:
+        winner = model1
+    elif score2 > score1:
+        winner = model2
+    else:
+        winner = "tie"
+    
+    return {
+        "model1": {"name": model1, **result1},
+        "model2": {"name": model2, **result2},
+        "winner": winner,
+        "score_diff": score_diff
+    }
+
+
+def get_all_model_comparison(record: dict):
+    """
+    Атрымлівае поўнае параўнанне вынікаў усіх мадэлей для запісу.
+    
+    Args:
+        record: Запіс з global_results
+    
+    Returns:
+        Слоўнік з усімі параўнаннямі і лепшым вынікам
+    """
+    model_results = record.get('model_results', {})
+    
+    if not model_results:
+        return {
+            "models_count": 0,
+            "best_model": None,
+            "comparisons": [],
+            "all_scores": {}
+        }
+    
+    best_model, best_result = select_best_model_result(model_results)
+    
+    # Стварыць усе парныя параўнанні
+    models = list(model_results.keys())
+    comparisons = []
+    
+    for i in range(len(models)):
+        for j in range(i + 1, len(models)):
+            comparison = compare_two_models(model_results, models[i], models[j])
+            comparisons.append(comparison)
+    
+    # Сабраць усе скоры
+    all_scores = {model: result.get('score', 0) for model, result in model_results.items()}
+    
+    return {
+        "models_count": len(models),
+        "best_model": best_model,
+        "best_result": best_result,
+        "comparisons": comparisons,
+        "all_scores": all_scores
+    }
+
+
+def find_best_model_pair(record: dict, ref_text: str):
+    """
+    Знаходзіць пару крыніц з найлепшым супадзеннем ПАМІЖ САБОЙ.
+    
+    Args:
+        record: Запіс з global_results
+        ref_text: Арыгінальны тэкст для параўнання
+    
+    Returns:
+        Слоўнік з інфармацыяй пра лепшую пару
+    """
+    model_results = record.get('model_results', {})
+    
+    if not model_results or len(model_results) < 2:
+        return None
+    
+    # Параўнаць усе пары крыніц паміж сабой і знайсці найлепшае супадзенне
+    sources = list(model_results.items())
+    best_pair = None
+    best_pair_similarity = -1
+    
+    import utils
+    
+    for i in range(len(sources)):
+        for j in range(i + 1, len(sources)):
+            m1_name, m1_result = sources[i]
+            m2_name, m2_result = sources[j]
+            
+            m1_hyp = m1_result.get('hyp_text', '')
+            m2_hyp = m2_result.get('hyp_text', '')
+            
+            # Вылічыць падабенства паміж двума гіпотэзамі
+            pair_similarity, _, _ = utils.calculate_similarity(m1_hyp, m2_hyp)
+            
+            if pair_similarity > best_pair_similarity:
+                best_pair_similarity = pair_similarity
+                m1_ref_score = m1_result.get('score', 0)
+                m2_ref_score = m2_result.get('score', 0)
+                
+                # Выбраць лепшы тэкст (той, што мае вышэйшы скор з арыгіналам)
+                if m1_ref_score >= m2_ref_score:
+                    best_hyp = m1_hyp
+                    best_model = m1_name
+                    best_score = m1_ref_score
+                else:
+                    best_hyp = m2_hyp
+                    best_model = m2_name
+                    best_score = m2_ref_score
+                
+                best_pair = {
+                    "model1": m1_name,
+                    "model2": m2_name,
+                    "model1_hyp": m1_hyp,
+                    "model2_hyp": m2_hyp,
+                    "model1_score": m1_ref_score,
+                    "model2_score": m2_ref_score,
+                    "pair_similarity": pair_similarity,
+                    "best_hyp": best_hyp,
+                    "best_model": best_model,
+                    "best_score": best_score
+                }
+    
+    return best_pair
+
 def get_dataset_cache_key(dataset_name: str, limit: int) -> str:
     """Generate a cache key for the dataset."""
     return hashlib.md5(f"{dataset_name}:{limit}".encode()).hexdigest()
@@ -155,6 +331,105 @@ def generate_dashboard_outputs(similarity_threshold: int):
 
             model_used = row.get('model_used', 'unknown')
             model_badge = "🖐️ Ручная праверка" if model_used == 'manual' else _e(model_used)
+            
+            # Генерацыя HTML для параўнання мадэлей
+            model_comparison_html = ""
+            model_results = row.get('model_results', {})
+            if model_results and len(model_results) > 1:
+                comparison_data = get_all_model_comparison(row)
+                best_model = comparison_data.get('best_model', '')
+                
+                model_scores_rows = ""
+                # Сартаваць па скору
+                sorted_models = sorted(model_results.items(), key=lambda x: -x[1].get('score', 0))
+                
+                for m_name, m_data in sorted_models:
+                    m_score = m_data.get('score', 0)
+                    m_hyp = m_data.get('hyp_text', '')
+                    is_best = "✅" if m_name == best_model else ""
+                    score_bg = "#10b981" if m_score >= similarity_threshold else "#f59e0b" if m_score >= 70 else "#ef4444"
+                    
+                    model_scores_rows += f"""
+                        <tr style="border-bottom: 1px solid #334155;">
+                            <td style="color: #e2e8f0; padding: 8px 10px; vertical-align: top; white-space: nowrap;">
+                                <div style="font-weight: bold; margin-bottom: 4px;">{is_best} {_e(m_name)}</div>
+                                <span style="background: {score_bg}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;">{int(m_score)}%</span>
+                            </td>
+                            <td style="color: #cbd5e1; padding: 8px 10px; font-family: monospace; font-size: 0.85em; vertical-align: top;">
+                                {_e(m_hyp)}
+                            </td>
+                        </tr>
+                    """
+                
+                model_comparison_html = f"""
+                <details style="color: #94a3b8; margin-bottom: 15px;">
+                    <summary style="cursor: pointer; color: #60a5fa; margin-bottom: 5px;">📊 Параўнанне мадэлей ({len(model_results)})</summary>
+                    <div style="background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid #334155; margin-top: 5px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #1e293b; border-bottom: 1px solid #475569;">
+                                    <th style="text-align: left; color: #94a3b8; padding: 10px; width: 30%;">Мадэль / Скор</th>
+                                    <th style="text-align: left; color: #94a3b8; padding: 10px;">Тэкст</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {model_scores_rows}
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+                """
+
+            # Атрымаць лепшы вынік (пара крыніц з найлепшым супадзеннем паміж сабой)
+            best_text_html = ""
+            ref_text = row.get('ref_text', '')
+            
+            if model_results and len(model_results) >= 2:
+                # Выклікаем функцыю, якая цяпер шукае лепшае супадзенне ПАМІЖ КРЫНІЦАМІ
+                best_pair = find_best_model_pair(row, ref_text)
+                if best_pair:
+                    m1_name = best_pair.get('model1', '')
+                    m2_name = best_pair.get('model2', '')
+                    pair_sim = best_pair.get('pair_similarity', 0)
+                    best_hyp_pair = best_pair.get('best_hyp', '')
+                    
+                    pair_sim_bg = "#10b981" if pair_sim >= 95 else "#f59e0b" if pair_sim >= 80 else "#ef4444"
+                    
+                    best_text_html = f"""
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border-radius: 8px; padding: 15px; margin-bottom: 10px; border: 1px solid #3b82f6;">
+                    <p style="color: #60a5fa; margin: 0 0 10px 0; font-size: 0.9em;">
+                        🏆 Найлепшае супадзенне паміж крыніцамі:
+                        <span style="background: #475569; color: #e2e8f0; padding: 2px 8px; border-radius: 6px; margin: 0 5px;">{_e(m1_name)}</span>
+                        ↔
+                        <span style="background: #475569; color: #e2e8f0; padding: 2px 8px; border-radius: 6px; margin: 0 5px;">{_e(m2_name)}</span>
+                        <span style="background: {pair_sim_bg}; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">{int(pair_sim)}%</span>
+                    </p>
+                    <p style="color: #93c5fd; margin: 0; font-family: monospace; font-weight: bold;">{_e(best_hyp_pair)}</p>
+                </div>
+                """
+            elif model_results and len(model_results) == 1:
+                # Толькі адна мадэль
+                m_name = list(model_results.keys())[0]
+                res = model_results[m_name]
+                score = res.get('score', 0)
+                hyp = res.get('hyp_text', '')
+                score_bg = "#10b981" if score >= similarity_threshold else "#f59e0b" if score >= 70 else "#ef4444"
+                
+                best_text_html = f"""
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border-radius: 8px; padding: 15px; margin-bottom: 10px; border: 1px solid #3b82f6;">
+                    <p style="color: #60a5fa; margin: 0 0 5px 0; font-size: 0.9em;">
+                        🏆 Вынік ({_e(m_name)}) 
+                        <span style="background: {score_bg}; color: white; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">{int(score)}%</span>
+                    </p>
+                    <p style="color: #93c5fd; margin: 0; font-family: monospace; font-weight: bold;">{_e(hyp)}</p>
+                </div>
+                """
+            
+            # Атрымаць скор і мадэль для бягучага "Распазнана"
+            current_hyp = row.get('hyp_text', '')
+            current_model = row.get('model_used', 'unknown')
+            current_score = float(row.get('score', 0))
+            current_score_bg = "#10b981" if current_score >= similarity_threshold else "#f59e0b" if current_score >= 70 else "#ef4444"
 
             flagged_html += f"""
             <div style="background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 15px;
@@ -175,9 +450,14 @@ def generate_dashboard_outputs(similarity_threshold: int):
                     <p style="color: #f1f5f9; margin: 0; font-family: monospace;">{_e(row.get('ref_text'))}</p>
                 </div>
                 <div style="background: #0f172a; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
-                    <p style="color: #94a3b8; margin: 0 0 5px 0; font-size: 0.85em;">🎤 Распазнана:</p>
-                    <p style="color: #f1f5f9; margin: 0; font-family: monospace;">{_e(row.get('hyp_text'))}</p>
+                    <p style="color: #94a3b8; margin: 0 0 5px 0; font-size: 0.85em;">
+                        🎤 Распазнана 
+                        <span style="background: #475569; color: #e2e8f0; padding: 2px 6px; border-radius: 6px; font-size: 0.9em; margin-left: 5px;">{_e(current_model)}</span>
+                        <span style="background: {current_score_bg}; color: white; padding: 2px 6px; border-radius: 6px; font-size: 0.9em; margin-left: 5px;">{int(current_score)}%</span>
+                    </p>
+                    <p style="color: #f1f5f9; margin: 0; font-family: monospace;">{_e(current_hyp)}</p>
                 </div>
+                {best_text_html}
                 <details style="color: #94a3b8; margin-bottom: 10px;">
                     <summary style="cursor: pointer; color: #60a5fa;">🔍 Нармалізаваны тэкст</summary>
                     <div style="background: #0f172a; border-radius: 8px; padding: 10px; margin-top: 10px;">
@@ -185,6 +465,7 @@ def generate_dashboard_outputs(similarity_threshold: int):
                         <p style="margin: 5px 0;"><strong>Hyp:</strong> {_e(row.get('norm_hyp'))}</p>
                     </div>
                 </details>
+                {model_comparison_html}
                 {audio_html}
                 <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: flex-end;">
                     <button type="button" onclick="verifyRecord({rid}, 'correct')" class="verify-btn correct-btn">✅ Правільна</button>
@@ -350,14 +631,33 @@ def run_analysis(
 
                 print(f"🔄 Updated: {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
 
-                global_results[idx].update({
+                # Захаваць вынік гэтай мадэлі ў model_results
+                if 'model_results' not in global_results[idx]:
+                    global_results[idx]['model_results'] = {}
+                
+                global_results[idx]['model_results'][model_name] = {
                     "hyp_text": hyp_text,
                     "score": score,
                     "norm_ref": norm_ref,
-                    "norm_hyp": norm_hyp,
-                    "model_used": model_name,
-                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
-                })
+                    "norm_hyp": norm_hyp
+                }
+                
+                # Параўнаць і выбраць лепшы вынік з усіх мадэлей
+                best_model, best_result = select_best_model_result(
+                    global_results[idx]['model_results'], 
+                    similarity_threshold
+                )
+                
+                # Абнавіць асноўныя палі лепшым вынікам
+                if best_result:
+                    global_results[idx].update({
+                        "hyp_text": best_result['hyp_text'],
+                        "score": best_result['score'],
+                        "norm_ref": best_result['norm_ref'],
+                        "norm_hyp": best_result['norm_hyp'],
+                        "model_used": best_model,
+                        "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
+                    })
 
         else:
             limit = int(limit_files) if limit_files > 0 else None
@@ -395,7 +695,15 @@ def run_analysis(
                     "audio_array": audio_data,
                     "sampling_rate": sampling_rate,
                     "model_used": model_name,
-                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect",
+                    "model_results": {
+                        model_name: {
+                            "hyp_text": hyp_text,
+                            "score": score,
+                            "norm_ref": norm_ref,
+                            "norm_hyp": norm_hyp
+                        }
+                    }
                 })
             
             global_results = results
@@ -529,14 +837,33 @@ def run_smart_analysis(
 
                 print(f"🔄 Smart Updated (Step 1): {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
 
-                results[res_idx].update({
+                # Захаваць вынік гэтай мадэлі ў model_results
+                if 'model_results' not in results[res_idx]:
+                    results[res_idx]['model_results'] = {}
+                
+                results[res_idx]['model_results'][model_name] = {
                     "hyp_text": hyp_text,
                     "score": score,
                     "norm_ref": norm_ref,
-                    "norm_hyp": norm_hyp,
-                    "model_used": model_name,
-                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
-                })
+                    "norm_hyp": norm_hyp
+                }
+                
+                # Параўнаць і выбраць лепшы вынік з усіх мадэлей
+                best_model, best_result = select_best_model_result(
+                    results[res_idx]['model_results'], 
+                    similarity_threshold
+                )
+                
+                # Абнавіць асноўныя палі лепшым вынікам
+                if best_result:
+                    results[res_idx].update({
+                        "hyp_text": best_result['hyp_text'],
+                        "score": best_result['score'],
+                        "norm_ref": best_result['norm_ref'],
+                        "norm_hyp": best_result['norm_hyp'],
+                        "model_used": best_model,
+                        "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
+                    })
 
         else:
             # Standard logic: load dataset and process all
@@ -575,7 +902,15 @@ def run_smart_analysis(
                     "audio_array": audio_data,
                     "sampling_rate": sampling_rate,
                     "model_used": model_name,
-                    "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect",
+                    "model_results": {
+                        model_name: {
+                            "hyp_text": hyp_text,
+                            "score": score,
+                            "norm_ref": norm_ref,
+                            "norm_hyp": norm_hyp
+                        }
+                    }
                 })
 
         # STEP 2-4: Iterative improvement
@@ -617,31 +952,37 @@ def run_smart_analysis(
                 hyp_text = utils.transcribe_audio(client, model_name, audio_data, sampling_rate, config=gen_config)
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
-                # Use explicit variable for update decision
-                should_update = False
+                # Заўсёды захоўваць вынік гэтай мадэлі ў model_results
+                if 'model_results' not in results[res_idx]:
+                    results[res_idx]['model_results'] = {}
                 
-                # Condition 1: Score improved
-                if score > result['score']:
-                    should_update = True
+                results[res_idx]['model_results'][model_name] = {
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp
+                }
                 
-                # Condition 2: Score is sufficient to be marked 'correct' (and it wasn't before)
-                # This fixes the case where a "fake" 100% (marked incorrect/problematic) is replaced by a real 90%
-                elif score >= similarity_threshold:
-                    should_update = True
-
-                if should_update:
-                    new_status = "correct" if score >= similarity_threshold else "incorrect"
-                    print(f"✅ UPDATE APPLIED [Idx={res_idx}]: {result.get('path')}")
+                # Параўнаць і выбраць лепшы вынік з усіх мадэлей
+                best_model, best_result = select_best_model_result(
+                    results[res_idx]['model_results'], 
+                    similarity_threshold
+                )
+                
+                # Абнавіць асноўныя палі лепшым вынікам
+                if best_result and (best_result['score'] > result['score'] or best_result['score'] >= similarity_threshold):
+                    new_status = "correct" if best_result['score'] >= similarity_threshold else "incorrect"
+                    print(f"✅ UPDATE APPLIED [Idx={res_idx}]: {result.get('path')} | Best model: {best_model} | Score: {result['score']} -> {best_result['score']}")
                     results[res_idx].update({
-                        "hyp_text": hyp_text,
-                        "score": score,
-                        "norm_ref": norm_ref,
-                        "norm_hyp": norm_hyp,
-                        "model_used": model_name,
+                        "hyp_text": best_result['hyp_text'],
+                        "score": best_result['score'],
+                        "norm_ref": best_result['norm_ref'],
+                        "norm_hyp": best_result['norm_hyp'],
+                        "model_used": best_model,
                         "verification_status": new_status
                     })
                 else:
-                    print(f"⏭️ SKIP UPDATE [Idx={res_idx}]: New score {score} is not better than {result.get('score')} and not meeting threshold {similarity_threshold}")
+                    print(f"⏭️ SKIP UPDATE [Idx={res_idx}]: Best score {best_result['score'] if best_result else 'N/A'} is not better than {result.get('score')} and not meeting threshold {similarity_threshold}")
 
         global_results = results
         return generate_dashboard_outputs(similarity_threshold)
@@ -840,6 +1181,25 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
                 sampling_rate = item['audio']['sampling_rate']
             
             # Append result with all metadata
+            # Загрузіць model_results з JSON калі ёсць
+            model_results = {}
+            model_results_val = row.get('model_results')
+            if pd.notnull(model_results_val) and model_results_val:
+                try:
+                    model_results = json.loads(str(model_results_val))
+                except:
+                    model_results = {}
+            
+            # Дадаць імпартаваны вынік як крыніцу ў model_results
+            if hyp and score > 0:
+                source_name = f"imported_{model_used}" if model_used != 'imported_csv' else 'imported_csv'
+                model_results[source_name] = {
+                    "hyp_text": hyp,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp
+                }
+            
             results.append({
                 "id": int(row_id) if pd.notnull(row_id) else idx,
                 "path": fname,
@@ -853,7 +1213,8 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
                 "verification_status": verification_status,
                 "model_used": model_used,
                 "norm_ref": norm_ref,
-                "norm_hyp": norm_hyp
+                "norm_hyp": norm_hyp,
+                "model_results": model_results
             })
             
         global_results = results
@@ -876,7 +1237,7 @@ def _find_index_by_id(record_id: int):
     return None
 
 
-def verify_action(data_str, similarity_threshold):
+def verify_action(data_str, similarity_threshold, dataset_name):
     """
     Handles verification button click.
     Expects JSON like: {"id": 12, "status": "correct", "ts": 123456}
@@ -906,7 +1267,8 @@ def verify_action(data_str, similarity_threshold):
         # Persist to CSV (best effort)
         try:
             save_df = pd.DataFrame(global_results)
-            save_df.to_csv("check_dataset_results.csv", index=False)
+            clean_name = dataset_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+            save_df.to_csv(f"{clean_name}_results.csv", index=False)
         except Exception as e:
             print(f"Error saving to CSV: {e}")
 
@@ -917,19 +1279,53 @@ def verify_action(data_str, similarity_threshold):
         return generate_dashboard_outputs(similarity_threshold)
 
 
-def save_results_csv():
+def save_results_csv(dataset_name):
     global global_results
     if not global_results:
         return None
 
     try:
-        df = pd.DataFrame(global_results)
-        cols_to_exclude = ['audio_array', 'sampling_rate']
-        valid_cols = [c for c in df.columns if c not in cols_to_exclude]
-        df_export = df[valid_cols]
-
-        filename = "check_dataset_results.csv"
+        # Падрыхтоўка даных для экспарту
+        export_data = []
+        for result in global_results:
+            export_row = {k: v for k, v in result.items() if k not in ['audio_array', 'sampling_rate']}
+            
+            # Канвертаваць model_results у JSON-радок
+            if 'model_results' in export_row and export_row['model_results']:
+                export_row['model_results'] = json.dumps(export_row['model_results'], ensure_ascii=False)
+            
+            export_data.append(export_row)
+        
+        df_export = pd.DataFrame(export_data)
+        
+        # Асноўны файл
+        clean_name = dataset_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+        filename = f"{clean_name}_results.csv"
         df_export.to_csv(filename, index=False)
+        
+        # Стварыць падрабязны файл з параўнаннем мадэлей
+        detailed_data = []
+        for result in global_results:
+            model_results = result.get('model_results', {})
+            if model_results:
+                comparison = get_all_model_comparison(result)
+                for model_name, model_result in model_results.items():
+                    detailed_data.append({
+                        "id": result.get('id'),
+                        "path": result.get('path'),
+                        "model_name": model_name,
+                        "hyp_text": model_result.get('hyp_text', ''),
+                        "score": model_result.get('score', 0),
+                        "is_best": model_name == comparison.get('best_model', ''),
+                        "ref_text": result.get('ref_text', '')
+                    })
+        
+        if detailed_data:
+            df_detailed = pd.DataFrame(detailed_data)
+            detailed_filename = f"{clean_name}_model_comparison.csv"
+            df_detailed.to_csv(detailed_filename, index=False)
+            print(f"Created detailed model comparison file: {detailed_filename}")
+        
         return filename
     except Exception as e:
         print(f"Error creating CSV: {e}")
@@ -1312,7 +1708,7 @@ with gr.Blocks(
 
     download_btn.click(
         fn=save_results_csv,
-        inputs=[],
+        inputs=[dataset_name],
         outputs=[download_file]
     )
 
@@ -1331,7 +1727,7 @@ with gr.Blocks(
     # Verification event
     verification_trigger.click(
         fn=verify_action,
-        inputs=[verification_data, similarity_threshold],
+        inputs=[verification_data, similarity_threshold, dataset_name],
         outputs=[stats_output, flagged_output, results_table]
     )
 
