@@ -1394,7 +1394,7 @@ def save_results_csv(dataset_name):
 def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
     """
     Creates a new dataset on Hugging Face using only verified records.
-    Name of the new dataset is {dataset_name}Checked.
+    Name of the new dataset is {username}/{original_name}Checked.
     """
     global global_results
     
@@ -1412,6 +1412,17 @@ def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
 
     try:
         login(token=hf_token)
+        api = HfApi(token=hf_token)
+        user_info = api.whoami()
+        username = user_info['name']
+
+        # Determine new repository ID
+        if "/" in dataset_name:
+            original_slug = dataset_name.split("/")[-1]
+        else:
+            original_slug = dataset_name
+            
+        new_repo_id = f"{username}/{original_slug}Checked"
         
         # Generator for the new dataset
         def gen():
@@ -1475,24 +1486,28 @@ def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
                          "original_path": row.get('path', '')
                      }
         
-        # Define features
+        # Define features using primitive types to avoid 'Audio' feature triggering torch checks
         features = Features({
-            "audio": Audio(sampling_rate=16000), 
+            "audio": {"bytes": Value("binary"), "path": Value("string")}, 
             "text": Value("string"),
             "original_path": Value("string")
         })
         
         new_ds = Dataset.from_generator(gen, features=features)
+
+        # Manually patch the feature metadata to 'Audio' so HF Hub recognizes it as audio
+        # This bypasses the strict dependency checks in datasets.Audio.encode_example
+        if "audio" in new_ds.features:
+            new_ds.info.features["audio"] = Audio(sampling_rate=None)
         
         if len(new_ds) == 0:
              raise gr.Error("Не ўдалося сабраць аўдыяданыя для правераных запісаў.")
 
-        new_name = dataset_name + "Checked"
-        progress(0.9, desc=f"Загрузка датасэта '{new_name}' на Hugging Face...")
+        progress(0.9, desc=f"Загрузка датасэта '{new_repo_id}' на Hugging Face...")
         
-        new_ds.push_to_hub(new_name, token=hf_token)
+        new_ds.push_to_hub(new_repo_id, token=hf_token)
         
-        return f"✅ Датасэт паспяхова створаны: https://huggingface.co/datasets/{new_name}"
+        return f"✅ Датасэт паспяхова створаны: https://huggingface.co/datasets/{new_repo_id}"
 
     except Exception as e:
         raise gr.Error(f"Памылка стварэння датасэта: {e}")
