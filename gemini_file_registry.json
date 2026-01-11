@@ -8412,5 +8412,1566 @@
     "mime_type": "audio/wav",
     "upload_time": 1768140175.4451253,
     "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmptzrkgami\\audio_388.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/aej4l6z6db6d",
+    "name": "files/aej4l6z6db6d",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146891.7572384,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_18.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/q0u913nk8132",
+    "name": "files/q0u913nk8132",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146894.3968155,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_18.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_20.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8owugly573mk",
+    "name": "files/8owugly573mk",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146896.4664774,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_20.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_25.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hmh4qxikrljq",
+    "name": "files/hmh4qxikrljq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146898.6401637,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_25.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_29.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/a2db9pzp5tm8",
+    "name": "files/a2db9pzp5tm8",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146901.027332,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_29.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_36.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/xm3g34bmuh8n",
+    "name": "files/xm3g34bmuh8n",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146903.5684175,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_36.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_37.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/upi8khy5qzky",
+    "name": "files/upi8khy5qzky",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146906.1311572,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_37.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_38.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/guywxix30zaw",
+    "name": "files/guywxix30zaw",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146909.5167086,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_38.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_41.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qmrqj25qu38j",
+    "name": "files/qmrqj25qu38j",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146911.9257016,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_41.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_42.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/83o2t36ec7nj",
+    "name": "files/83o2t36ec7nj",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146913.9268644,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_42.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_43.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/oadm2l3uk5zt",
+    "name": "files/oadm2l3uk5zt",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146915.98696,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_43.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_49.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hzdhqasep2ih",
+    "name": "files/hzdhqasep2ih",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146917.830467,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_49.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_53.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/3l0b2725j78i",
+    "name": "files/3l0b2725j78i",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146920.061937,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_53.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_56.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hd6d5bdt5plx",
+    "name": "files/hd6d5bdt5plx",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146922.1244376,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_56.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_63.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/5g1393ibwwas",
+    "name": "files/5g1393ibwwas",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146924.7232375,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_63.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_65.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/s4h6cwjlwc5s",
+    "name": "files/s4h6cwjlwc5s",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146927.3281236,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_65.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_69.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/6yrpi190zhpo",
+    "name": "files/6yrpi190zhpo",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146929.5115254,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_69.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_77.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/o0in5s0mq2gm",
+    "name": "files/o0in5s0mq2gm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146931.7063928,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_77.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_85.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/5nbihzdvkxc1",
+    "name": "files/5nbihzdvkxc1",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146934.159431,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_85.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_88.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/2641r7yix7zo",
+    "name": "files/2641r7yix7zo",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146936.6461577,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_88.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_92.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ralm1nymcu33",
+    "name": "files/ralm1nymcu33",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146940.2479856,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_92.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_93.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/dh7djlox9uqk",
+    "name": "files/dh7djlox9uqk",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146942.8926318,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_93.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_102.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1aejt1h0yzlp",
+    "name": "files/1aejt1h0yzlp",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146946.3950226,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_102.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_117.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/zatecgmrtldh",
+    "name": "files/zatecgmrtldh",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146949.6097326,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_117.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_120.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8rphcgwoutcs",
+    "name": "files/8rphcgwoutcs",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146953.3220851,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_120.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_125.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/2tx9knctiu0s",
+    "name": "files/2tx9knctiu0s",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146955.5366316,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_125.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_127.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1fsqgxp89eiv",
+    "name": "files/1fsqgxp89eiv",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146958.0978606,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_127.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_135.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/yqhbm3ou8nw3",
+    "name": "files/yqhbm3ou8nw3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146960.066063,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_135.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_157.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fkmkl0ijei9j",
+    "name": "files/fkmkl0ijei9j",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146962.0344045,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_157.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_160.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/g7u8hxt6aoi3",
+    "name": "files/g7u8hxt6aoi3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146964.1752996,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_160.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_161.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/o7es0cxj3snh",
+    "name": "files/o7es0cxj3snh",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146966.339945,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_161.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_166.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/5ndoewmn4t4e",
+    "name": "files/5ndoewmn4t4e",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146968.5663927,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_166.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_179.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/r6v7dwkbr607",
+    "name": "files/r6v7dwkbr607",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146971.4231365,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_179.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_198.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/v4ihyznlyz70",
+    "name": "files/v4ihyznlyz70",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146973.4547608,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_198.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_218.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8tub1vdfpbue",
+    "name": "files/8tub1vdfpbue",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146975.7714136,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_218.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_224.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/aneganjv75oe",
+    "name": "files/aneganjv75oe",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146977.7749965,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_224.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_226.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ppwlcz4dnidt",
+    "name": "files/ppwlcz4dnidt",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146980.342421,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_226.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_253.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8v6l8l55y90g",
+    "name": "files/8v6l8l55y90g",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146983.46703,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_253.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_262.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/uhcfoafec83r",
+    "name": "files/uhcfoafec83r",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146985.7813597,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_262.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_277.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/wagpzqlocieb",
+    "name": "files/wagpzqlocieb",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146987.6783185,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_277.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_280.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qwgq23if1hik",
+    "name": "files/qwgq23if1hik",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146990.226118,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_280.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_284.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/dnxjoeuce1nm",
+    "name": "files/dnxjoeuce1nm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146993.0367973,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_284.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_286.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9r0j1l0qrut4",
+    "name": "files/9r0j1l0qrut4",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146995.545332,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_286.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_293.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/uujqp8nq80yn",
+    "name": "files/uujqp8nq80yn",
+    "mime_type": "audio/wav",
+    "upload_time": 1768146997.8839986,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_293.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_294.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/tglhiz94eqzh",
+    "name": "files/tglhiz94eqzh",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147000.570102,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_294.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_311.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/uhnl5iklq8rc",
+    "name": "files/uhnl5iklq8rc",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147002.7090743,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_311.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_318.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/o0oeso5vifuz",
+    "name": "files/o0oeso5vifuz",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147004.7627556,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_318.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_324.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/m74ifsbld1jm",
+    "name": "files/m74ifsbld1jm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147006.594501,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_324.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_334.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/kqpnz5g5vakm",
+    "name": "files/kqpnz5g5vakm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147009.0399656,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_334.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_339.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/gsnq0vlhq80z",
+    "name": "files/gsnq0vlhq80z",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147011.2484744,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_339.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_357.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/oot2zbdhtq4b",
+    "name": "files/oot2zbdhtq4b",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147013.530692,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_357.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_363.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/2uuku19bg00j",
+    "name": "files/2uuku19bg00j",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147015.3899949,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_363.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_374.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/tgnb3w515ndq",
+    "name": "files/tgnb3w515ndq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147017.7587273,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_374.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_383.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9wptzpm9gyw0",
+    "name": "files/9wptzpm9gyw0",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147020.1502187,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp7_cdeu9q\\audio_383.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpywhdhotl\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/bgdwf3c2ds1w",
+    "name": "files/bgdwf3c2ds1w",
+    "mime_type": "audio/wav",
+    "upload_time": 1768147797.7321439,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpywhdhotl\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/e0trrv2cpxiv",
+    "name": "files/e0trrv2cpxiv",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148244.7841914,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_18.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qenp73ccd9c9",
+    "name": "files/qenp73ccd9c9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148246.9767463,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_18.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_20.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hddytwh8juk1",
+    "name": "files/hddytwh8juk1",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148249.5147796,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_20.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_25.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/do9h4mnlxc2r",
+    "name": "files/do9h4mnlxc2r",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148251.421981,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_25.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_29.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cm0l9wv7gua2",
+    "name": "files/cm0l9wv7gua2",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148253.6196933,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_29.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_36.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/4xktot4r4h37",
+    "name": "files/4xktot4r4h37",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148257.9824605,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_36.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_37.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/p494ls4bjw0b",
+    "name": "files/p494ls4bjw0b",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148261.0009358,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_37.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_38.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/vbc3c0umie5z",
+    "name": "files/vbc3c0umie5z",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148266.9325516,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_38.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_41.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/w21yy95abyl8",
+    "name": "files/w21yy95abyl8",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148272.6259298,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_41.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_42.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/if28rdgll61h",
+    "name": "files/if28rdgll61h",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148278.9824545,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_42.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_43.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8ztc73sg347y",
+    "name": "files/8ztc73sg347y",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148281.2072394,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_43.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_49.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/w0max5vyenm1",
+    "name": "files/w0max5vyenm1",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148286.126904,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_49.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_53.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/u9xh8dqvpv0q",
+    "name": "files/u9xh8dqvpv0q",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148292.5674894,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_53.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_56.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/009bbekpp6po",
+    "name": "files/009bbekpp6po",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148298.5346959,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_56.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_69.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ae1occrr5ii5",
+    "name": "files/ae1occrr5ii5",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148302.854568,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_69.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_85.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/xuzzxh9z9ny3",
+    "name": "files/xuzzxh9z9ny3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148311.7584107,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_85.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_88.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/h51c6sed5lkl",
+    "name": "files/h51c6sed5lkl",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148315.6785135,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_88.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_93.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/h7ihn7y8hdg3",
+    "name": "files/h7ihn7y8hdg3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148319.2305346,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_93.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_117.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qzf4g0r4stmz",
+    "name": "files/qzf4g0r4stmz",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148322.6896508,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_117.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_120.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8cz1ypxawmyu",
+    "name": "files/8cz1ypxawmyu",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148325.1546035,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_120.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_125.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/vxlq6ve07ez7",
+    "name": "files/vxlq6ve07ez7",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148330.801822,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_125.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_127.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/85irb8t1lk65",
+    "name": "files/85irb8t1lk65",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148336.227512,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_127.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_135.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/zrdaivtqrjlr",
+    "name": "files/zrdaivtqrjlr",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148339.5328069,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_135.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_157.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/7p5utzc4wmg9",
+    "name": "files/7p5utzc4wmg9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148342.3526323,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_157.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_161.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jd0pbp3r4wug",
+    "name": "files/jd0pbp3r4wug",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148345.617492,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_161.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_166.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/pajje3ceoqwp",
+    "name": "files/pajje3ceoqwp",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148348.9962308,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_166.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_179.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/oubtbtmh40dx",
+    "name": "files/oubtbtmh40dx",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148351.079158,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_179.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_198.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/7ry2r69gfm9t",
+    "name": "files/7ry2r69gfm9t",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148353.3526428,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_198.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_218.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/bh8t3xkm60i2",
+    "name": "files/bh8t3xkm60i2",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148355.8261974,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_218.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_224.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/obweixdzunjn",
+    "name": "files/obweixdzunjn",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148358.32863,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_224.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_226.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1wb4q1zywj8g",
+    "name": "files/1wb4q1zywj8g",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148361.630039,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_226.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_253.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/342nxcm0rvkp",
+    "name": "files/342nxcm0rvkp",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148364.3467867,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_253.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_262.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/wls0ujeezkmw",
+    "name": "files/wls0ujeezkmw",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148366.5458694,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_262.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_277.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/4n0t8f548hai",
+    "name": "files/4n0t8f548hai",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148368.507216,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_277.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_284.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/88rehmcgv5wc",
+    "name": "files/88rehmcgv5wc",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148370.5092592,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_284.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_286.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/yxvo03mn9wp6",
+    "name": "files/yxvo03mn9wp6",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148372.6600788,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_286.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_294.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/41vm5bxthjg1",
+    "name": "files/41vm5bxthjg1",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148374.7593136,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_294.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_318.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/lb33h7if8z4k",
+    "name": "files/lb33h7if8z4k",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148377.569318,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_318.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_324.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/aj2oncmngg0k",
+    "name": "files/aj2oncmngg0k",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148380.3189323,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_324.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_334.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/gpa6pk3chx7x",
+    "name": "files/gpa6pk3chx7x",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148385.0043068,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_334.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_339.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qey6r2mwbkvm",
+    "name": "files/qey6r2mwbkvm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148387.932913,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_339.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_357.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jsuppp17bz5n",
+    "name": "files/jsuppp17bz5n",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148390.1814249,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_357.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_363.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/i1vvemqlzt2u",
+    "name": "files/i1vvemqlzt2u",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148392.5921543,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_363.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_374.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/sv7oj0qj017d",
+    "name": "files/sv7oj0qj017d",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148395.5841846,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_374.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_383.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/i9qlk4irfjty",
+    "name": "files/i9qlk4irfjty",
+    "mime_type": "audio/wav",
+    "upload_time": 1768148398.936298,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp5kvb3syl\\audio_383.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/glx10gtix29d",
+    "name": "files/glx10gtix29d",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149022.6567767,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_18.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/kvlfi65npwis",
+    "name": "files/kvlfi65npwis",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149024.702492,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_18.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_20.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fc8ut11zuho2",
+    "name": "files/fc8ut11zuho2",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149027.6879885,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_20.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_25.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8rfa167pma5r",
+    "name": "files/8rfa167pma5r",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149030.1079028,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_25.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_29.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fxtf4nz30olu",
+    "name": "files/fxtf4nz30olu",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149032.7174342,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_29.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_36.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/7diw1dh5g0ph",
+    "name": "files/7diw1dh5g0ph",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149034.7915864,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_36.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_37.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jj459gklcpbb",
+    "name": "files/jj459gklcpbb",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149037.4616776,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_37.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_38.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/f2bta6thnkrh",
+    "name": "files/f2bta6thnkrh",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149039.5403013,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_38.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_41.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/yhkjfhzfpdsb",
+    "name": "files/yhkjfhzfpdsb",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149041.8848298,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_41.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_42.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cik4fyd0v9pr",
+    "name": "files/cik4fyd0v9pr",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149043.7178667,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_42.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_43.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/s5pequtxoqjt",
+    "name": "files/s5pequtxoqjt",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149045.5679252,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_43.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_49.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/6b91tj17hlgg",
+    "name": "files/6b91tj17hlgg",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149047.8859801,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_49.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_53.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/2hxxvzjmtm68",
+    "name": "files/2hxxvzjmtm68",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149049.9777262,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_53.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_56.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/nj1vn4ls55qq",
+    "name": "files/nj1vn4ls55qq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149052.0739748,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_56.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_69.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/lvit0p4eqxou",
+    "name": "files/lvit0p4eqxou",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149053.928797,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_69.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_85.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qsuvqga0dgh3",
+    "name": "files/qsuvqga0dgh3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149058.4193332,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_85.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_88.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/mln1u0zei83g",
+    "name": "files/mln1u0zei83g",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149060.6859763,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_88.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_93.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/4ai0rfior6ut",
+    "name": "files/4ai0rfior6ut",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149063.2926993,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_93.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_117.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1ukkiha78jo8",
+    "name": "files/1ukkiha78jo8",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149065.8472667,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_117.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_120.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/84ilp3zyuckq",
+    "name": "files/84ilp3zyuckq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149068.1050768,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_120.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_125.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cvoc45nbwm7c",
+    "name": "files/cvoc45nbwm7c",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149070.4159694,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_125.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_127.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/4hnrm7gd357a",
+    "name": "files/4hnrm7gd357a",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149072.4080524,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_127.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_135.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/rkmek2n2hbek",
+    "name": "files/rkmek2n2hbek",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149074.4441571,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_135.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_157.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/c6p2aqdlfcan",
+    "name": "files/c6p2aqdlfcan",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149076.5617664,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_157.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_161.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/iikrwqcgft5k",
+    "name": "files/iikrwqcgft5k",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149078.4149654,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_161.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_166.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/rknohn6xohut",
+    "name": "files/rknohn6xohut",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149080.8792896,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_166.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_179.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jirp4fh3zh8z",
+    "name": "files/jirp4fh3zh8z",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149083.2225118,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_179.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_198.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/m4p06zo1lzc7",
+    "name": "files/m4p06zo1lzc7",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149085.7030725,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_198.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_218.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qf36unpsz0nq",
+    "name": "files/qf36unpsz0nq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149087.7999501,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_218.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_224.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/bvezo9ews1ys",
+    "name": "files/bvezo9ews1ys",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149089.513781,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_224.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_226.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/olnixwqimex7",
+    "name": "files/olnixwqimex7",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149091.82711,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_226.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_253.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/boesiyho585w",
+    "name": "files/boesiyho585w",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149093.8106983,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_253.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_262.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ffyx0e0510bq",
+    "name": "files/ffyx0e0510bq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149096.5151534,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_262.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_277.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/j18o7wsd3x24",
+    "name": "files/j18o7wsd3x24",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149098.5433955,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_277.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_284.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cnrgk4tz2has",
+    "name": "files/cnrgk4tz2has",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149100.467996,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_284.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_286.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/xwl79esrl4va",
+    "name": "files/xwl79esrl4va",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149102.730863,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_286.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_294.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/zvinywpat9hm",
+    "name": "files/zvinywpat9hm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149104.73398,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_294.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_318.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/gn3z69or0jlq",
+    "name": "files/gn3z69or0jlq",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149106.331404,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_318.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_324.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8t7r2c5ha1rs",
+    "name": "files/8t7r2c5ha1rs",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149108.3370633,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_324.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_334.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/uxtk82q75w8s",
+    "name": "files/uxtk82q75w8s",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149110.4892766,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_334.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_339.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/y427ajsmsex5",
+    "name": "files/y427ajsmsex5",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149112.4563944,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_339.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_357.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/e32ethg6tfxm",
+    "name": "files/e32ethg6tfxm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149114.4785552,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_357.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_363.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/8svzei812d3w",
+    "name": "files/8svzei812d3w",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149116.659906,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_363.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_374.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/uauahhsm24yx",
+    "name": "files/uauahhsm24yx",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149118.7038987,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_374.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_383.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ivurxdgixxgr",
+    "name": "files/ivurxdgixxgr",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149120.9870775,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpfm69g08v\\audio_383.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/z3g09py1jih0",
+    "name": "files/z3g09py1jih0",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149755.973423,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_18.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/56gnhy367gd9",
+    "name": "files/56gnhy367gd9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149757.7231932,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_18.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_20.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/6ij62ngpu0ln",
+    "name": "files/6ij62ngpu0ln",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149759.7905674,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_20.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_25.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/91toedopc8h8",
+    "name": "files/91toedopc8h8",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149762.1297684,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_25.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_29.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/raboghppzeq9",
+    "name": "files/raboghppzeq9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149764.536575,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_29.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_36.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/s5sir1a61lhz",
+    "name": "files/s5sir1a61lhz",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149767.1367812,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_36.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_37.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/nd443ce7g44b",
+    "name": "files/nd443ce7g44b",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149769.473259,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_37.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_38.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/vwucfzikmayl",
+    "name": "files/vwucfzikmayl",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149771.5297396,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_38.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_41.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/c4zfwgf6pqmc",
+    "name": "files/c4zfwgf6pqmc",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149773.6364288,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_41.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_42.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/je5yd5n1t3it",
+    "name": "files/je5yd5n1t3it",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149776.1065657,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_42.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_43.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/b5rr3f9zlchi",
+    "name": "files/b5rr3f9zlchi",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149778.461847,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_43.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_49.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/t3muj89ddm9j",
+    "name": "files/t3muj89ddm9j",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149780.545314,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_49.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_53.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ns52z2bz09f9",
+    "name": "files/ns52z2bz09f9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149782.7129438,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_53.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_56.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cj0pwmigw56w",
+    "name": "files/cj0pwmigw56w",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149785.059364,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_56.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_69.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9th2kjb69n5n",
+    "name": "files/9th2kjb69n5n",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149787.4572313,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_69.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_85.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/b2ebjp5m0uai",
+    "name": "files/b2ebjp5m0uai",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149789.6715405,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_85.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_88.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ggxmtle4cb6z",
+    "name": "files/ggxmtle4cb6z",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149791.9652462,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_88.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_93.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cm2swcqiqi3j",
+    "name": "files/cm2swcqiqi3j",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149794.1943967,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_93.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_117.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/6m9skvgvxr18",
+    "name": "files/6m9skvgvxr18",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149796.1637921,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_117.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_120.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/euw6wey5lotz",
+    "name": "files/euw6wey5lotz",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149798.0016272,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_120.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_125.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1u0rrkt3xlf3",
+    "name": "files/1u0rrkt3xlf3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149800.342118,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_125.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_127.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ba8j5kwu64ne",
+    "name": "files/ba8j5kwu64ne",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149803.168555,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_127.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_135.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jkqpwiabdod0",
+    "name": "files/jkqpwiabdod0",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149806.6292276,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_135.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_157.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/f5mn43s7ewli",
+    "name": "files/f5mn43s7ewli",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149808.7602503,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_157.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_161.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/so44phu1ahou",
+    "name": "files/so44phu1ahou",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149811.0749524,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_161.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_166.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/sxpwplmg3zyh",
+    "name": "files/sxpwplmg3zyh",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149814.019653,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_166.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_179.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1a74o07ereig",
+    "name": "files/1a74o07ereig",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149815.954772,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_179.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_198.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/i097imuhv6dv",
+    "name": "files/i097imuhv6dv",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149817.933204,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_198.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_218.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jc3czt02eihg",
+    "name": "files/jc3czt02eihg",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149821.304679,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_218.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_224.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ho0z7hzow3hf",
+    "name": "files/ho0z7hzow3hf",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149823.4417405,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_224.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_226.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/ui8f63carvld",
+    "name": "files/ui8f63carvld",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149825.977785,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_226.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_253.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/djjo5i9vd7l6",
+    "name": "files/djjo5i9vd7l6",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149828.0477974,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_253.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_262.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/422bnlzveva3",
+    "name": "files/422bnlzveva3",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149830.1047149,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_262.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_277.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/puakh3qtqmfc",
+    "name": "files/puakh3qtqmfc",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149832.53702,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_277.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_284.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/b5tenwf9x8jv",
+    "name": "files/b5tenwf9x8jv",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149835.7452097,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_284.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_286.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/t0tk4ma8nx86",
+    "name": "files/t0tk4ma8nx86",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149838.0591342,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_286.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_294.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/cozwlc33mc8d",
+    "name": "files/cozwlc33mc8d",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149840.6506612,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_294.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_318.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/rvi1oev7mb9x",
+    "name": "files/rvi1oev7mb9x",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149842.5519512,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_318.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_324.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/iln2rjrk326n",
+    "name": "files/iln2rjrk326n",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149844.2625825,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_324.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_334.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hcfshr5qd9qw",
+    "name": "files/hcfshr5qd9qw",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149847.0418577,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_334.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_339.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qtvynaaemspt",
+    "name": "files/qtvynaaemspt",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149849.0944564,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_339.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_357.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/df19zg5msd05",
+    "name": "files/df19zg5msd05",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149850.8664982,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_357.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_363.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9vp1oc1qk0qm",
+    "name": "files/9vp1oc1qk0qm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149853.722159,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_363.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_374.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9dw5fqpxhxss",
+    "name": "files/9dw5fqpxhxss",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149856.922582,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_374.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_383.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/pfvz06ps2onz",
+    "name": "files/pfvz06ps2onz",
+    "mime_type": "audio/wav",
+    "upload_time": 1768149858.80612,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmpktt2k57f\\audio_383.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_17.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/zw8rbbu5altk",
+    "name": "files/zw8rbbu5altk",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152179.1272964,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_17.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_20.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/7lzrxlwfuw83",
+    "name": "files/7lzrxlwfuw83",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152181.281156,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_20.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_25.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/9nm1qrav5fvm",
+    "name": "files/9nm1qrav5fvm",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152183.2083445,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_25.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_29.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/81qgk4h0hr49",
+    "name": "files/81qgk4h0hr49",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152185.0306044,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_29.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_36.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/f077t1b8mylo",
+    "name": "files/f077t1b8mylo",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152186.6684093,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_36.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_37.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/063rx1s4usd9",
+    "name": "files/063rx1s4usd9",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152189.5406704,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_37.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_38.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/rgfpl0od1u1c",
+    "name": "files/rgfpl0od1u1c",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152191.7881482,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_38.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_41.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/3oavdosowfaf",
+    "name": "files/3oavdosowfaf",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152193.8776853,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_41.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_42.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/u1bfo65l9cag",
+    "name": "files/u1bfo65l9cag",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152196.1780334,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_42.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_49.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/p97ygnaqzyf6",
+    "name": "files/p97ygnaqzyf6",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152198.7627075,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_49.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_53.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/1jkqwnr93l2v",
+    "name": "files/1jkqwnr93l2v",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152201.0073462,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_53.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_56.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/bu4uxrtvsbj7",
+    "name": "files/bu4uxrtvsbj7",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152203.214455,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_56.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_69.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fwwgy19ec344",
+    "name": "files/fwwgy19ec344",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152205.4648492,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_69.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_117.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fw2stpz269f8",
+    "name": "files/fw2stpz269f8",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152207.3464003,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_117.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_120.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/h63xqy8zpfmw",
+    "name": "files/h63xqy8zpfmw",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152209.7736197,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_120.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_125.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/j6kcttkc56qk",
+    "name": "files/j6kcttkc56qk",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152212.182165,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_125.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_161.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/f46ilq0j2qnn",
+    "name": "files/f46ilq0j2qnn",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152214.637993,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_161.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_166.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/m34d7higbomp",
+    "name": "files/m34d7higbomp",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152216.68471,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_166.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_198.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/xe0zl3st3kfd",
+    "name": "files/xe0zl3st3kfd",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152218.5744584,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_198.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_218.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/2vjyrgezzia5",
+    "name": "files/2vjyrgezzia5",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152220.7623558,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_218.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_226.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/666dgixcib6a",
+    "name": "files/666dgixcib6a",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152223.0544968,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_226.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_262.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/x9jlzana9pjp",
+    "name": "files/x9jlzana9pjp",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152224.8429725,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_262.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_277.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/eeyrd3546xih",
+    "name": "files/eeyrd3546xih",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152227.0826764,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_277.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_284.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/fbfvc228pi9h",
+    "name": "files/fbfvc228pi9h",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152229.1284854,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_284.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_286.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/dq15h9iipo4x",
+    "name": "files/dq15h9iipo4x",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152231.0083933,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_286.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_294.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/0uxx456anxex",
+    "name": "files/0uxx456anxex",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152233.2369924,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_294.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_318.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/xlmwbtwiytyi",
+    "name": "files/xlmwbtwiytyi",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152235.4948668,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_318.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_334.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/5saj17v5tuzw",
+    "name": "files/5saj17v5tuzw",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152237.7442112,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_334.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_339.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/hza4v5zyztby",
+    "name": "files/hza4v5zyztby",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152239.7713177,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_339.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_357.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/jce5fh05eefn",
+    "name": "files/jce5fh05eefn",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152241.8561518,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_357.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_363.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/iuqpnku5spy5",
+    "name": "files/iuqpnku5spy5",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152244.149079,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_363.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_374.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/qbi3y3qwk1wf",
+    "name": "files/qbi3y3qwk1wf",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152246.7996883,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_374.wav"
+  },
+  "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_383.wav": {
+    "uri": "https://generativelanguage.googleapis.com/v1beta/files/r96f35ls1un2",
+    "name": "files/r96f35ls1un2",
+    "mime_type": "audio/wav",
+    "upload_time": 1768152248.6593478,
+    "path": "C:\\Users\\admin\\AppData\\Local\\Temp\\tmp4hp9uwsk\\audio_383.wav"
   }
 }

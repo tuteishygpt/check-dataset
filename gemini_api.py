@@ -33,6 +33,15 @@ except ImportError:
 
 REGISTRY_FILE = "gemini_file_registry.json"
 
+DEFAULT_TRANSCRIPTION_PROMPT = """You are a transcription engine.
+Transcribe the following audio verbatim in Belarusian.
+This audio is a fragment of an audiobook and may start or end mid-sentence.
+Preserve exact wording, punctuation, repetitions, pauses, and incomplete or cut-off phrases.
+Do NOT correct grammar, normalize text, or improve style.
+Write all numbers as Belarusian words (no digits), preserving the intended form (cardinal/ordinal, cases, and gender when clear from context). If the form is unclear, choose the most neutral spoken form.
+Do NOT add explanations, timestamps, speaker labels, or any extra text.
+Output ONLY the raw transcription."""
+
 
 @dataclass
 class BatchTask:
@@ -130,15 +139,7 @@ class GeminiIntegrator:
         
         last_error = None
         
-        default_prompt = """You are a transcription engine.
-Transcribe the following audio verbatim in Belarusian.
-This audio is a fragment of an audiobook and may start or end mid-sentence.
-Preserve exact wording, punctuation, repetitions, pauses, and incomplete or cut-off phrases.
-Do NOT correct grammar, normalize text, or improve style.
-Do NOT add explanations, timestamps, speaker labels, or any extra text.
-Output ONLY the raw transcription."""
-
-        final_prompt = prompt if prompt else default_prompt
+        final_prompt = prompt if prompt else DEFAULT_TRANSCRIPTION_PROMPT
 
         for attempt in range(max_retries):
             try:

@@ -15,7 +15,7 @@ import re
 from datasets import Dataset, Audio, Features, Value
 from huggingface_hub import login, HfApi
 
-from gemini_api import GeminiIntegrator, BatchTask
+from gemini_api import GeminiIntegrator, BatchTask, DEFAULT_TRANSCRIPTION_PROMPT
 import tempfile
 import shutil
 
@@ -704,7 +704,7 @@ def run_analysis(
 
             # 3. Execute Batch
             progress(0.3, desc=f"Запуск пакетнай апрацоўкі ({len(tasks)} файлаў). Гэта зойме час...")
-            prompt = "Transcribe the following audio verbatim in Belarusian."
+            prompt = DEFAULT_TRANSCRIPTION_PROMPT
             
             try:
                 batch_results = gemini_tool.run_batch(tasks, model_name, prompt)
@@ -1731,8 +1731,89 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
                 "model_results": model_results
             })
             
-        global_results = results
-        print(f"Imported {len(results)} results from CSV.")
+        # Merge new results into global_results instead of overwriting
+        if not global_results:
+            global_results = results
+        else:
+            # Create a new list to ensure reference change (helps with UI reactivity)
+            updated_global_results = list(global_results)
+            
+            # Create a map for quick path-based lookup containing strictly non-empty paths
+            existing_path_map = {r.get('path'): i for i, r in enumerate(updated_global_results) if r.get('path')}
+            
+            # Track used IDs to avoid collisions for new items
+            used_ids = {r.get('id') for r in updated_global_results if r.get('id') is not None}
+            max_id = max(used_ids) if used_ids else -1
+            
+            cnt_updated = 0
+            cnt_added = 0
+            
+            for new_item in results:
+                path = new_item.get('path')
+                
+                # Update only if path is known and not empty
+                if path and path in existing_path_map:
+                    # Update existing record
+                    idx_to_update = existing_path_map[path]
+                    old_item = updated_global_results[idx_to_update]
+                    
+                    # Merge model results (Crucial for Model Comparison history)
+                    old_results_dict = old_item.get('model_results', {})
+                    new_results_dict = new_item.get('model_results', {})
+                    merged_results = old_results_dict.copy()
+                    merged_results.update(new_results_dict)
+                    new_item['model_results'] = merged_results
+
+                    # RE-CALCULATE BEST: After merging, we might have a better champion in history
+                    best_model, best_res = select_best_model_result(merged_results, similarity_threshold)
+                    if best_res:
+                        new_item.update({
+                            "hyp_text": best_res['hyp_text'],
+                            "score": best_res['score'],
+                            "norm_ref": best_res['norm_ref'],
+                            "norm_hyp": best_res['norm_hyp'],
+                            "model_used": best_model
+                        })
+                        # Re-verify against current threshold
+                        # If it was manual before, keep it? Usually manual wins.
+                        # But if we just imported a better result, maybe 'correct' is better.
+                        if old_item.get('model_used') != 'manual':
+                            if int(round(best_res['score'])) >= similarity_threshold:
+                                new_item['verification_status'] = 'correct'
+                            else:
+                                new_item['verification_status'] = 'incorrect'
+
+                    # Preserve audio if it was already loaded but not present in CSV
+                    if new_item.get('audio_array') is None and old_item.get('audio_array') is not None:
+                        new_item['audio_array'] = old_item['audio_array']
+                        new_item['sampling_rate'] = old_item['sampling_rate']
+                    
+                    # Carry over existing ID
+                    new_item['id'] = old_item.get('id', new_item.get('id'))
+                    
+                    updated_global_results[idx_to_update] = new_item
+                    cnt_updated += 1
+                else:
+                    # Supplement: add new record
+                    # Re-verify new item against threshold just in case
+                    if new_item.get('model_used') != 'manual':
+                        if int(round(new_item.get('score', 0))) >= similarity_threshold:
+                            new_item['verification_status'] = 'correct'
+                    
+                    if new_item.get('id') in used_ids:
+                        max_id += 1
+                        new_item['id'] = max_id
+                    
+                    updated_global_results.append(new_item)
+                    if new_item.get('id') is not None:
+                        used_ids.add(new_item['id'])
+                        max_id = max(max_id, new_item['id'])
+                    cnt_added += 1
+            
+            global_results = updated_global_results
+            print(f"CSV Merge: Updated {cnt_updated} existing records, Added {cnt_added} new records.")
+
+        print(f"Total records after import: {len(global_results)}")
         return generate_dashboard_outputs(similarity_threshold)
         
     except Exception as e:
