@@ -4,8 +4,8 @@ google-genai
 rapidfuzz
 python-dotenv
 gradio
+gradio_client
 pandas
 soundfile
 numpy
 librosa
-
