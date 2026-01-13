@@ -12,7 +12,7 @@ from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator, BatchTask, DEFAULT_TRANSCRIPTION_PROMPT
-from hf_asr import is_hf_asr_model, get_hf_asr_client
+from hf_asr import is_hf_asr_model, get_hf_asr_client, HF_BATCH_SIZE
 
 
 def sanitize_filename(name):
@@ -482,7 +482,7 @@ def _run_hf_fresh_analysis(
     hf_client, model_name, dataset_name, limit_files,
     similarity_threshold, progress
 ):
-    """Run fresh analysis using HF ASR."""
+    """Run fresh analysis using HF ASR with batch processing."""
     limit = int(limit_files) if limit_files > 0 else None
     
     cached_ds = get_cached_dataset(dataset_name, limit)
@@ -495,44 +495,79 @@ def _run_hf_fresh_analysis(
         cache_dataset(dataset_name, limit, ds)
         progress(0.1, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
     
-    results = []
-    
+    # Pre-collect all items with their data
+    all_items = []
     for idx, item in enumerate(ds):
-        progress((idx + 1) / len(ds), desc=f"Апрацоўка файла {idx+1}/{len(ds)} (HF ASR)")
-        
         audio_data = item['audio']['array']
         sampling_rate = item['audio']['sampling_rate']
         ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+        all_items.append({
+            "idx": idx,
+            "path": item['audio']['path'],
+            "audio_data": audio_data,
+            "sampling_rate": sampling_rate,
+            "ref_text": ref_text
+        })
+    
+    total_items = len(all_items)
+    results = [None] * total_items  # Pre-allocate for correct ordering
+    
+    # Process in batches of HF_BATCH_SIZE (100)
+    batch_size = HF_BATCH_SIZE
+    num_batches = (total_items + batch_size - 1) // batch_size
+    
+    for batch_num in range(num_batches):
+        start_idx = batch_num * batch_size
+        end_idx = min(start_idx + batch_size, total_items)
+        batch_items = all_items[start_idx:end_idx]
+        
+        progress_val = 0.1 + (batch_num / num_batches) * 0.9
+        progress(progress_val, desc=f"Пакет {batch_num + 1}/{num_batches}: апрацоўка {len(batch_items)} файлаў (HF ASR)...")
+        
+        # Prepare batch for transcription: (key, audio_array, sampling_rate)
+        batch_audio = [
+            (item["idx"], item["audio_data"], item["sampling_rate"])
+            for item in batch_items
+        ]
         
         try:
-            hyp_text = hf_client.transcribe_audio(audio_data, sampling_rate)
+            # Send batch to HF ASR
+            transcriptions = hf_client.transcribe_batch(batch_audio)
         except Exception as e:
-            print(f"HF ASR error for item {idx}: {e}")
-            hyp_text = ""
+            print(f"HF ASR batch error: {e}")
+            transcriptions = {}
         
-        score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
-        
-        results.append({
-            "id": idx,
-            "path": item['audio']['path'],
-            "ref_text": ref_text,
-            "hyp_text": hyp_text,
-            "score": score,
-            "norm_ref": norm_ref,
-            "norm_hyp": norm_hyp,
-            "audio_array": audio_data,
-            "sampling_rate": sampling_rate,
-            "model_used": model_name,
-            "verification_status": "correct" if score >= similarity_threshold else "incorrect",
-            "model_results": {
-                model_name: {
-                    "hyp_text": hyp_text,
-                    "score": score,
-                    "norm_ref": norm_ref,
-                    "norm_hyp": norm_hyp
+        # Process results
+        for item in batch_items:
+            idx = item["idx"]
+            ref_text = item["ref_text"]
+            hyp_text = transcriptions.get(idx, "")
+            
+            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+            
+            results[idx] = {
+                "id": idx,
+                "path": item["path"],
+                "ref_text": ref_text,
+                "hyp_text": hyp_text,
+                "score": score,
+                "norm_ref": norm_ref,
+                "norm_hyp": norm_hyp,
+                "audio_array": item["audio_data"],
+                "sampling_rate": item["sampling_rate"],
+                "model_used": model_name,
+                "verification_status": "correct" if score >= similarity_threshold else "incorrect",
+                "model_results": {
+                    model_name: {
+                        "hyp_text": hyp_text,
+                        "score": score,
+                        "norm_ref": norm_ref,
+                        "norm_hyp": norm_hyp
+                    }
                 }
             }
-        })
+        
+        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {len(transcriptions)}/{len(batch_items)} транскрыбавана")
     
     set_global_results(results)
     return generate_dashboard_outputs(similarity_threshold)
@@ -542,7 +577,7 @@ def _run_hf_recheck_analysis(
     hf_client, model_name, dataset_name, limit_files,
     similarity_threshold, progress
 ):
-    """Run recheck of problematic files using HF ASR."""
+    """Run recheck of problematic files using HF ASR with batch processing."""
     global_results = get_global_results()
     
     if not global_results:
@@ -584,18 +619,16 @@ def _run_hf_recheck_analysis(
             audio_map[fname] = item
             audio_map[path] = item
     
-    progress(0.1, desc=f"Пераправерка {len(target_indices)} файлаў (HF ASR)...")
-    
-    for j, idx in enumerate(target_indices):
-        progress(0.1 + (j + 1) / len(target_indices) * 0.9, desc=f"Праверка {j+1}/{len(target_indices)}")
-        
+    # Collect all items to process with their audio data
+    items_to_process = []
+    for idx in target_indices:
         result = global_results[idx]
         audio_data = result.get('audio_array')
         sampling_rate = result.get('sampling_rate')
         ref_text = result.get('ref_text', "")
         
         # If audio is missing, try to fetch from dataset
-        if audio_data is None or len(audio_data) == 0:
+        if audio_data is None or (hasattr(audio_data, '__len__') and len(audio_data) == 0):
             path = result.get('path', '')
             item = audio_map.get(path) or audio_map.get(os.path.basename(path))
             
@@ -619,42 +652,85 @@ def _run_hf_recheck_analysis(
                 print(f"HF Recheck: Skipping index {idx}, path '{path}': Audio not found.")
                 continue
         
+        items_to_process.append({
+            "idx": idx,
+            "audio_data": audio_data,
+            "sampling_rate": sampling_rate,
+            "ref_text": ref_text
+        })
+    
+    if not items_to_process:
+        gr.Info("Няма файлаў з аўдыя для пераправеркі.")
+        return generate_dashboard_outputs(similarity_threshold)
+    
+    # Process in batches of HF_BATCH_SIZE (100)
+    batch_size = HF_BATCH_SIZE
+    total_items = len(items_to_process)
+    num_batches = (total_items + batch_size - 1) // batch_size
+    
+    progress(0.1, desc=f"Пераправерка {total_items} файлаў у {num_batches} пакетах (HF ASR)...")
+    
+    for batch_num in range(num_batches):
+        start_idx = batch_num * batch_size
+        end_idx = min(start_idx + batch_size, total_items)
+        batch_items = items_to_process[start_idx:end_idx]
+        
+        progress_val = 0.1 + (batch_num / num_batches) * 0.9
+        progress(progress_val, desc=f"Пакет {batch_num + 1}/{num_batches}: апрацоўка {len(batch_items)} файлаў...")
+        
+        # Prepare batch for transcription: (key, audio_array, sampling_rate)
+        batch_audio = [
+            (item["idx"], item["audio_data"], item["sampling_rate"])
+            for item in batch_items
+        ]
+        
         try:
-            hyp_text = hf_client.transcribe_audio(audio_data, sampling_rate)
+            # Send batch to HF ASR
+            transcriptions = hf_client.transcribe_batch(batch_audio)
         except Exception as e:
-            print(f"HF ASR error for item {idx}: {e}")
-            continue
+            print(f"HF ASR batch error: {e}")
+            transcriptions = {}
         
-        score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+        # Process results
+        for item in batch_items:
+            idx = item["idx"]
+            ref_text = item["ref_text"]
+            hyp_text = transcriptions.get(idx, "")
+            
+            if not hyp_text:
+                continue
+            
+            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+            
+            print(f"🔄 HF Updated: {global_results[idx].get('path')} | Score: {global_results[idx].get('score')} -> {score}")
+            
+            # Save model result
+            if 'model_results' not in global_results[idx]:
+                global_results[idx]['model_results'] = {}
+            
+            global_results[idx]['model_results'][model_name] = {
+                "hyp_text": hyp_text,
+                "score": score,
+                "norm_ref": norm_ref,
+                "norm_hyp": norm_hyp
+            }
+            
+            # Select best result from all models
+            best_model, best_result = select_best_model_result(
+                global_results[idx]['model_results'], 
+                similarity_threshold
+            )
+            
+            if best_result:
+                global_results[idx].update({
+                    "hyp_text": best_result['hyp_text'],
+                    "score": best_result['score'],
+                    "norm_ref": best_result['norm_ref'],
+                    "norm_hyp": best_result['norm_hyp'],
+                    "model_used": best_model,
+                    "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
+                })
         
-        print(f"🔄 HF Updated: {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
-        
-        # Save model result
-        if 'model_results' not in global_results[idx]:
-            global_results[idx]['model_results'] = {}
-        
-        global_results[idx]['model_results'][model_name] = {
-            "hyp_text": hyp_text,
-            "score": score,
-            "norm_ref": norm_ref,
-            "norm_hyp": norm_hyp
-        }
-        
-        # Select best result from all models
-        best_model, best_result = select_best_model_result(
-            global_results[idx]['model_results'], 
-            similarity_threshold
-        )
-        
-        if best_result:
-            global_results[idx].update({
-                "hyp_text": best_result['hyp_text'],
-                "score": best_result['score'],
-                "norm_ref": best_result['norm_ref'],
-                "norm_hyp": best_result['norm_hyp'],
-                "model_used": best_model,
-                "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
-            })
+        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {len(transcriptions)}/{len(batch_items)} транскрыбавана")
     
     return generate_dashboard_outputs(similarity_threshold)
-

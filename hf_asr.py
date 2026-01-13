@@ -5,6 +5,9 @@ import soundfile as sf
 from gradio_client import Client, handle_file
 
 
+# Batch size for HF ASR processing
+HF_BATCH_SIZE = 100
+
 # Available HF ASR models
 HF_ASR_MODELS = {
     "SeamlessM4T-v2 (HF)": {
@@ -86,19 +89,23 @@ class HuggingFaceASR:
         Returns:
             Dictionary mapping keys to transcribed text
         """
+        if not audio_files:
+            return {}
+            
         client = self._ensure_client()
         
-        # Create temp files for all audio
+        # Create temp files for all audio - use indexed filenames for reliable matching
         temp_files = []
-        key_to_filename = {}
+        index_to_key = {}  # index -> original key
+        temp_dir = tempfile.mkdtemp()
         
         try:
-            for key, audio_array, sampling_rate in audio_files:
-                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
-                    tmp_path = tmp_file.name
-                    sf.write(tmp_path, audio_array, int(sampling_rate), format='WAV')
-                    temp_files.append(tmp_path)
-                    key_to_filename[os.path.basename(tmp_path)] = key
+            for i, (key, audio_array, sampling_rate) in enumerate(audio_files):
+                # Use indexed filename for reliable matching: 00000.wav, 00001.wav, etc.
+                tmp_path = os.path.join(temp_dir, f"{i:05d}.wav")
+                sf.write(tmp_path, audio_array, int(sampling_rate), format='WAV')
+                temp_files.append(tmp_path)
+                index_to_key[i] = key
             
             # Call the API with all files
             result = client.predict(
@@ -106,7 +113,7 @@ class HuggingFaceASR:
                 api_name="/transcribe_many_ui"
             )
             
-            # Parse results
+            # Parse results - match by filename index
             transcriptions = {}
             if result and len(result) >= 1:
                 df_dict = result[0]
@@ -115,13 +122,18 @@ class HuggingFaceASR:
                         if len(row) >= 2:
                             filename = str(row[0])
                             text = str(row[-1])
-                            # Match filename back to key
-                            for temp_file in temp_files:
-                                if os.path.basename(temp_file) in filename or filename in os.path.basename(temp_file):
-                                    key = key_to_filename.get(os.path.basename(temp_file))
-                                    if key:
-                                        transcriptions[key] = text
-                                        break
+                            
+                            # Extract index from filename (e.g., "00042.wav" -> 42)
+                            try:
+                                # Try to find the 5-digit index in filename
+                                basename = os.path.basename(filename)
+                                name_part = os.path.splitext(basename)[0]
+                                idx = int(name_part)
+                                if idx in index_to_key:
+                                    transcriptions[index_to_key[idx]] = text
+                            except (ValueError, IndexError):
+                                # Fallback: try matching by position in results
+                                pass
             
             return transcriptions
             
@@ -130,6 +142,11 @@ class HuggingFaceASR:
             for tmp_path in temp_files:
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
+            # Remove temp directory
+            try:
+                os.rmdir(temp_dir)
+            except:
+                pass
 
 
 def get_hf_asr_client(model_name: str) -> HuggingFaceASR:
