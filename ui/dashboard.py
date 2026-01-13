@@ -36,13 +36,25 @@ def generate_dashboard_outputs(similarity_threshold: int):
     # Problematic: below threshold AND NOT verified as correct
     flagged_mask = (df['score'] < similarity_threshold) & (df['verification_status'] != 'correct')
     flagged_count = int(flagged_mask.sum())
+    flagged_pct = (flagged_count / total_files * 100) if total_files > 0 else 0.0
     avg_score = df['score'].mean() if len(df) > 0 else 0
 
     # Model stats
     model_stats = ""
     if 'model_used' in df.columns:
         model_counts = df['model_used'].value_counts().to_dict()
-        model_stats_str = " | ".join([f"{_e(m)}: {c}" for m, c in model_counts.items()])
+        
+        # Calculate verified counts per model
+        verified_df = df[df['verification_status'] == 'correct']
+        verified_counts = verified_df['model_used'].value_counts().to_dict() if not verified_df.empty else {}
+        
+        stats_items = []
+        for m, count in model_counts.items():
+            v_count = verified_counts.get(m, 0)
+            stats_items.append(f"{_e(m)}: {count} <span style='color: #4ade80; font-weight: bold;'>(✅ {v_count})</span>")
+            
+        model_stats_str = " | ".join(stats_items)
+        
         model_stats = f"""
         <div style="background: rgba(30, 41, 59, 0.8); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
             <p style="color: #94a3b8; margin: 0;">🤖 <strong>Мадэлі:</strong> {model_stats_str}</p>
@@ -58,7 +70,7 @@ def generate_dashboard_outputs(similarity_threshold: int):
         </div>
         <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                     padding: 20px; border-radius: 12px; text-align: center; flex: 1; color: white;">
-            <h3 style="margin: 0; font-size: 2em;">{flagged_count}</h3>
+            <h3 style="margin: 0; font-size: 2em;">{flagged_count} <span style="font-size: 0.5em; opacity: 0.8;">({flagged_pct:.1f}%)</span></h3>
             <p style="margin: 5px 0 0 0; opacity: 0.9;">🚩 Праблемных</p>
         </div>
         <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
