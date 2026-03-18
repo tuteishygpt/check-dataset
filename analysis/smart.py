@@ -34,9 +34,9 @@ def run_smart_analysis(
 
     models = [
         ("gemini-2.5-flash-lite", "Этап 1/4: Flash-Lite (першы праход)"),
-        ("gemini-2.5-flash-lite", "Этап 2/4: Flash-Lite (другі праход)"),
+        ("gemini-3.1-flash-lite-preview", "Этап 2/4: Flash-Lite 3.1 (другі праход)"),
         ("gemini-2.5-flash", "Этап 3/4: Flash"),
-        ("gemini-3-flash-preview", "Этап 4/4: Gemini-3-Flash"),
+        ("gemini-2.5-pro", "Этап 4/4: Gemini-2.5-Pro"),
     ]
 
     try:
