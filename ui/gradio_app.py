@@ -43,7 +43,7 @@ def create_interface():
         head=head_js
     ) as demo:
 
-        gr.HTML("<h1 class='main-title'>🇧🇾 TTS Dataset Validator</h1>", sanitize=False)
+        gr.HTML("<h1 class='main-title'>TTS Dataset Validator</h1>", sanitize=False)
         gr.HTML("<p class='subtitle'>Аналіз аўдыядатасетаў для выяўлення несупадзенняў паміж метаданымі і гукам</p>", sanitize=False)
 
         with gr.Row():
