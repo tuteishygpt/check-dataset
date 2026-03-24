@@ -9,6 +9,7 @@ from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator
+from analysis.import_export import save_results_csv
 
 
 def run_smart_analysis(
@@ -132,6 +133,7 @@ def run_smart_analysis(
                     print(f"⏭️ SKIP UPDATE [Idx={res_idx}]: Best score {best_result['score'] if best_result else 'N/A'} is not better than {result.get('score')} and not meeting threshold {similarity_threshold}")
 
         set_global_results(results)
+        save_results_csv(dataset_name, auto_prefix=True)
         return generate_dashboard_outputs(similarity_threshold)
 
     except Exception as e:

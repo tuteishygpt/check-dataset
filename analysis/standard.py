@@ -12,8 +12,10 @@ from core.state import get_global_results, set_global_results
 from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
+from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator, BatchTask, DEFAULT_TRANSCRIPTION_PROMPT
 from hf_asr import is_hf_asr_model, get_hf_asr_client, HF_BATCH_SIZE
+from analysis.import_export import save_results_csv
 
 
 def sanitize_filename(name):
@@ -51,10 +53,12 @@ def run_analysis(
     # HUGGING FACE ASR MODE
     # ---------------------------------------------------------
     if is_hf_asr_model(model_name):
-        return _run_hf_asr_analysis(
+        outputs = _run_hf_asr_analysis(
             model_name, dataset_name, limit_files,
             similarity_threshold, recheck_problematic, progress
         )
+        save_results_csv(dataset_name, auto_prefix=True)
+        return outputs
 
     # For Gemini models, API key is required
     if not api_key:
@@ -78,24 +82,23 @@ def run_analysis(
         # BATCH MODE
         # ---------------------------------------------------------
         if batch_mode:
-            return _run_batch_analysis(
+            outputs = _run_batch_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
                 similarity_threshold, recheck_problematic, progress
             )
-
-        # ---------------------------------------------------------
-        # STANDARD SYNC MODE
-        # ---------------------------------------------------------
-        if recheck_problematic:
-            return _run_recheck_analysis(
+        elif recheck_problematic:
+            outputs = _run_recheck_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
                 similarity_threshold, gen_config, progress
             )
         else:
-            return _run_fresh_analysis(
+            outputs = _run_fresh_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
                 similarity_threshold, gen_config, progress
             )
+            
+        save_results_csv(dataset_name, auto_prefix=True)
+        return outputs
 
     except Exception as e:
         raise gr.Error(f"Памылка: {e}")
@@ -537,7 +540,13 @@ def _run_hf_fresh_analysis(
         ]
         
         # Send batch to HF ASR (retry logic is inside transcribe_batch)
-        transcriptions = hf_client.transcribe_batch(batch_audio)
+        try:
+            transcriptions = hf_client.transcribe_batch(batch_audio)
+        except RuntimeError as e:
+            if str(e) == "QUOTA_EXCEEDED":
+                print("🛑 Спыненне: перавышанне квоты Pro GPU. Захаванне ўжо апрацаваных даных...")
+                break
+            transcriptions = {}
         
         # Process results - only save successful transcriptions
         transcribed_count = 0
@@ -697,7 +706,13 @@ def _run_hf_recheck_analysis(
         ]
         
         # Send batch to HF ASR (retry logic is inside transcribe_batch)
-        transcriptions = hf_client.transcribe_batch(batch_audio)
+        try:
+            transcriptions = hf_client.transcribe_batch(batch_audio)
+        except RuntimeError as e:
+            if str(e) == "QUOTA_EXCEEDED":
+                print("🛑 Спыненне: перавышанне квоты Pro GPU. Захаванне ўжо апрацаваных даных...")
+                break
+            transcriptions = {}
         
         # Process results - only save successful transcriptions
         transcribed_count = 0

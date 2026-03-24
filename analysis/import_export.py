@@ -4,6 +4,7 @@ import io
 import re
 import json
 import pandas as pd
+from datetime import datetime
 import soundfile as sf
 import gradio as gr
 from datasets import Dataset, Audio, Features, Value
@@ -88,9 +89,9 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             df = df.rename(columns=rename_map)
         
         # Build lookups for fast matching
-        path_to_idx = {res['path']: i for i, res in enumerate(global_results) if res.get('path')}
-        basename_to_idx = {os.path.basename(res['path']): i for i, res in enumerate(global_results) if res.get('path')}
-        id_to_idx = {res['id']: i for i, res in enumerate(global_results) if res.get('id') is not None}
+        path_to_idx = {res['path']: i for i, res in enumerate(global_results) if res and res.get('path')}
+        basename_to_idx = {os.path.basename(res['path']): i for i, res in enumerate(global_results) if res and res.get('path')}
+        id_to_idx = {res['id']: i for i, res in enumerate(global_results) if res and res.get('id') is not None}
         
         def safe_str(val, default=''):
             if pd.isna(val): return default
@@ -171,7 +172,7 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
         return generate_dashboard_outputs(similarity_threshold)
 
 
-def save_results_csv(dataset_name):
+def save_results_csv(dataset_name, auto_prefix=False):
     """Save results to CSV file."""
     global_results = get_global_results()
     if not global_results:
@@ -179,7 +180,12 @@ def save_results_csv(dataset_name):
 
     try:
         export_data = []
+        processed_count = 0
         for result in global_results:
+            if not result:
+                continue
+            if result.get('hyp_text') or result.get('model_used'):
+                processed_count += 1
             export_row = {k: v for k, v in result.items() if k not in ['audio_array', 'sampling_rate']}
             if 'model_results' in export_row and export_row['model_results']:
                 export_row['model_results'] = json.dumps(export_row['model_results'], ensure_ascii=False)
@@ -187,13 +193,25 @@ def save_results_csv(dataset_name):
         
         df_export = pd.DataFrame(export_data)
         clean_name = sanitize_filename(dataset_name)
-        filename = f"{clean_name}_results.csv"
+        
+        prefix = ""
+        if auto_prefix:
+            time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            prefix = f"{time_str}_{processed_count}proc_"
+            
+        filename = f"{prefix}{clean_name}_results.csv"
         abs_path = os.path.abspath(filename)
         df_export.to_csv(abs_path, index=False)
-        print(f"💾 Exporting main CSV: {abs_path}")
+        
+        if auto_prefix:
+            print(f"✅ Аўтаматычнае захаванне вынікаў: {abs_path}")
+        else:
+            print(f"💾 Exporting main CSV: {abs_path}")
 
         detailed_data = []
         for result in global_results:
+            if not result:
+                continue
             model_results = result.get('model_results', {})
             if model_results:
                 comparison = get_all_model_comparison(result)
@@ -208,7 +226,7 @@ def save_results_csv(dataset_name):
         
         if detailed_data:
             df_detailed = pd.DataFrame(detailed_data)
-            detailed_filename = f"{clean_name}_model_comparison.csv"
+            detailed_filename = f"{prefix}{clean_name}_model_comparison.csv"
             df_detailed.to_csv(os.path.abspath(detailed_filename), index=False)
         
         return abs_path
@@ -220,7 +238,7 @@ def save_results_csv(dataset_name):
 def _find_index_by_id(record_id: int):
     """Find index by record ID."""
     for i, r in enumerate(get_global_results()):
-        if r.get("id") == record_id:
+        if r and r.get("id") == record_id:
             return i
     return None
 
@@ -299,7 +317,7 @@ def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
     if not global_results:
         raise gr.Error("Няма даных для стварэння датасэта.")
 
-    verified_data = [r for r in global_results if r.get('verification_status') == 'correct']
+    verified_data = [r for r in global_results if r and r.get('verification_status') == 'correct']
     if not verified_data:
         raise gr.Error("Няма правераных (correct) запісаў.")
 

@@ -92,6 +92,10 @@ class HuggingFaceASR:
                     
                 except Exception as e:
                     last_error = e
+                    if "exceeded your Pro GPU quota" in str(e):
+                        print(f"🚨 Крытычная памылка: перавышана квота Pro GPU! Працэс спыняецца.")
+                        raise RuntimeError("QUOTA_EXCEEDED")
+                    
                     if attempt < HF_MAX_RETRIES:
                         print(f"⚠️ HF ASR error (attempt {attempt + 1}/{HF_MAX_RETRIES + 1}): {e}")
                         print(f"   Чакаем {delay}с перад паўторнай спробай...")
@@ -173,6 +177,10 @@ class HuggingFaceASR:
                     
                 except Exception as e:
                     last_error = e
+                    if "exceeded your Pro GPU quota" in str(e):
+                        print(f"🚨 Крытычная памылка: перавышана квота Pro GPU! Працэс спыняецца.")
+                        raise RuntimeError("QUOTA_EXCEEDED")
+                    
                     if attempt < HF_MAX_RETRIES:
                         print(f"⚠️ HF ASR batch error (attempt {attempt + 1}/{HF_MAX_RETRIES + 1}): {e}")
                         print(f"   Чакаем {delay}с перад паўторнай спробай...")
