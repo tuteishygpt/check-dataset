@@ -1,5 +1,6 @@
 """Standard analysis with batch mode support."""
 import os
+import time
 import tempfile
 import re
 import gradio as gr
@@ -517,6 +518,11 @@ def _run_hf_fresh_analysis(
     num_batches = (total_items + batch_size - 1) // batch_size
     
     for batch_num in range(num_batches):
+        # Delay between batches to avoid rate limiting (skip for first batch)
+        if batch_num > 0:
+            print(f"⏳ Чакаем 5с перад наступным пакетам...")
+            time.sleep(5)
+        
         start_idx = batch_num * batch_size
         end_idx = min(start_idx + batch_size, total_items)
         batch_items = all_items[start_idx:end_idx]
@@ -530,44 +536,45 @@ def _run_hf_fresh_analysis(
             for item in batch_items
         ]
         
-        try:
-            # Send batch to HF ASR
-            transcriptions = hf_client.transcribe_batch(batch_audio)
-        except Exception as e:
-            print(f"HF ASR batch error: {e}")
-            transcriptions = {}
+        # Send batch to HF ASR (retry logic is inside transcribe_batch)
+        transcriptions = hf_client.transcribe_batch(batch_audio)
         
-        # Process results
+        # Process results - only save successful transcriptions
+        transcribed_count = 0
         for item in batch_items:
             idx = item["idx"]
             ref_text = item["ref_text"]
             hyp_text = transcriptions.get(idx, "")
             
-            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
-            
-            results[idx] = {
-                "id": idx,
-                "path": item["path"],
-                "ref_text": ref_text,
-                "hyp_text": hyp_text,
-                "score": score,
-                "norm_ref": norm_ref,
-                "norm_hyp": norm_hyp,
-                "audio_array": item["audio_data"],
-                "sampling_rate": item["sampling_rate"],
-                "model_used": model_name,
-                "verification_status": "correct" if score >= similarity_threshold else "incorrect",
-                "model_results": {
-                    model_name: {
-                        "hyp_text": hyp_text,
-                        "score": score,
-                        "norm_ref": norm_ref,
-                        "norm_hyp": norm_hyp
+            # Only record result if transcription was successful
+            if hyp_text:
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+                transcribed_count += 1
+                
+                results[idx] = {
+                    "id": idx,
+                    "path": item["path"],
+                    "ref_text": ref_text,
+                    "hyp_text": hyp_text,
+                    "score": score,
+                    "norm_ref": norm_ref,
+                    "norm_hyp": norm_hyp,
+                    "audio_array": item["audio_data"],
+                    "sampling_rate": item["sampling_rate"],
+                    "model_used": model_name,
+                    "verification_status": "correct" if score >= similarity_threshold else "incorrect",
+                    "model_results": {
+                        model_name: {
+                            "hyp_text": hyp_text,
+                            "score": score,
+                            "norm_ref": norm_ref,
+                            "norm_hyp": norm_hyp
+                        }
                     }
                 }
-            }
+            # Skip items with no transcription result
         
-        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {len(transcriptions)}/{len(batch_items)} транскрыбавана")
+        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {transcribed_count}/{len(batch_items)} транскрыбавана")
     
     set_global_results(results)
     return generate_dashboard_outputs(similarity_threshold)
@@ -671,6 +678,11 @@ def _run_hf_recheck_analysis(
     progress(0.1, desc=f"Пераправерка {total_items} файлаў у {num_batches} пакетах (HF ASR)...")
     
     for batch_num in range(num_batches):
+        # Delay between batches to avoid rate limiting (skip for first batch)
+        if batch_num > 0:
+            print(f"⏳ Чакаем 5с перад наступным пакетам...")
+            time.sleep(5)
+        
         start_idx = batch_num * batch_size
         end_idx = min(start_idx + batch_size, total_items)
         batch_items = items_to_process[start_idx:end_idx]
@@ -684,14 +696,11 @@ def _run_hf_recheck_analysis(
             for item in batch_items
         ]
         
-        try:
-            # Send batch to HF ASR
-            transcriptions = hf_client.transcribe_batch(batch_audio)
-        except Exception as e:
-            print(f"HF ASR batch error: {e}")
-            transcriptions = {}
+        # Send batch to HF ASR (retry logic is inside transcribe_batch)
+        transcriptions = hf_client.transcribe_batch(batch_audio)
         
-        # Process results
+        # Process results - only save successful transcriptions
+        transcribed_count = 0
         for item in batch_items:
             idx = item["idx"]
             ref_text = item["ref_text"]
@@ -700,6 +709,7 @@ def _run_hf_recheck_analysis(
             if not hyp_text:
                 continue
             
+            transcribed_count += 1
             score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
             
             print(f"🔄 HF Updated: {global_results[idx].get('path')} | Score: {global_results[idx].get('score')} -> {score}")
@@ -731,6 +741,6 @@ def _run_hf_recheck_analysis(
                     "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
                 })
         
-        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {len(transcriptions)}/{len(batch_items)} транскрыбавана")
+        print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {transcribed_count}/{len(batch_items)} транскрыбавана")
     
     return generate_dashboard_outputs(similarity_threshold)

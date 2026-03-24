@@ -1,5 +1,6 @@
 """Hugging Face ASR Integration for Belarusian Speech Recognition."""
 import os
+import time
 import tempfile
 import soundfile as sf
 from gradio_client import Client, handle_file
@@ -7,6 +8,11 @@ from gradio_client import Client, handle_file
 
 # Batch size for HF ASR processing
 HF_BATCH_SIZE = 100
+
+# Retry settings for HF ASR
+HF_BASE_DELAY = 5        # Base delay between requests (seconds)
+HF_MAX_RETRIES = 3       # Maximum number of retries on error
+HF_BACKOFF_FACTOR = 2    # Multiply delay by this on each retry
 
 # Available HF ASR models
 HF_ASR_MODELS = {
@@ -36,44 +42,66 @@ class HuggingFaceASR:
             self.client = Client(self.space_id)
         return self.client
     
+    def _reset_client(self):
+        """Reset the client to get a fresh connection/token."""
+        self.client = None
+
     def transcribe_audio(self, audio_array, sampling_rate: int) -> str:
-        """Transcribe a single audio file.
+        """Transcribe a single audio file with retry logic.
         
         Args:
             audio_array: NumPy array of audio data
             sampling_rate: Sample rate of the audio
             
         Returns:
-            Transcribed text
+            Transcribed text, or empty string on failure
         """
-        client = self._ensure_client()
-        
         # Save audio to temporary file
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
             tmp_path = tmp_file.name
             sf.write(tmp_path, audio_array, int(sampling_rate), format='WAV')
         
         try:
-            # Call the API with single file in list
-            result = client.predict(
-                files=[handle_file(tmp_path)],
-                api_name="/transcribe_many_ui"
-            )
+            delay = HF_BASE_DELAY
+            last_error = None
             
-            # Result is a tuple: (dataframe_dict, csv_filepath, status_string)
-            # dataframe_dict has 'headers' and 'data' keys
-            if result and len(result) >= 1:
-                df_dict = result[0]
-                if df_dict and 'data' in df_dict and len(df_dict['data']) > 0:
-                    # First row, get the transcription column (usually last column)
-                    row = df_dict['data'][0]
-                    # The data format is typically [filename, transcription]
-                    if len(row) >= 2:
-                        return str(row[-1])  # Last column is transcription
-                    elif len(row) == 1:
-                        return str(row[0])
+            for attempt in range(HF_MAX_RETRIES + 1):
+                try:
+                    client = self._ensure_client()
+                    
+                    # Call the API with single file in list
+                    result = client.predict(
+                        files=[handle_file(tmp_path)],
+                        api_name="/transcribe_many_ui"
+                    )
+                    
+                    # Result is a tuple: (dataframe_dict, csv_filepath, status_string)
+                    # dataframe_dict has 'headers' and 'data' keys
+                    if result and len(result) >= 1:
+                        df_dict = result[0]
+                        if df_dict and 'data' in df_dict and len(df_dict['data']) > 0:
+                            # First row, get the transcription column (usually last column)
+                            row = df_dict['data'][0]
+                            # The data format is typically [filename, transcription]
+                            if len(row) >= 2:
+                                return str(row[-1])  # Last column is transcription
+                            elif len(row) == 1:
+                                return str(row[0])
+                    
+                    return ""
+                    
+                except Exception as e:
+                    last_error = e
+                    if attempt < HF_MAX_RETRIES:
+                        print(f"⚠️ HF ASR error (attempt {attempt + 1}/{HF_MAX_RETRIES + 1}): {e}")
+                        print(f"   Чакаем {delay}с перад паўторнай спробай...")
+                        time.sleep(delay)
+                        delay *= HF_BACKOFF_FACTOR
+                        self._reset_client()  # Get fresh connection/token
+                    else:
+                        print(f"❌ HF ASR failed after {HF_MAX_RETRIES + 1} attempts: {e}")
             
-            return ""
+            return ""  # Return empty on all retries failed
             
         finally:
             # Clean up temp file
@@ -81,18 +109,16 @@ class HuggingFaceASR:
                 os.remove(tmp_path)
     
     def transcribe_batch(self, audio_files: list) -> dict:
-        """Transcribe multiple audio files in a batch.
+        """Transcribe multiple audio files in a batch with retry logic.
         
         Args:
             audio_files: List of tuples (key, audio_array, sampling_rate)
             
         Returns:
-            Dictionary mapping keys to transcribed text
+            Dictionary mapping keys to transcribed text (only successful results)
         """
         if not audio_files:
             return {}
-            
-        client = self._ensure_client()
         
         # Create temp files for all audio - use indexed filenames for reliable matching
         temp_files = []
@@ -107,35 +133,56 @@ class HuggingFaceASR:
                 temp_files.append(tmp_path)
                 index_to_key[i] = key
             
-            # Call the API with all files
-            result = client.predict(
-                files=[handle_file(f) for f in temp_files],
-                api_name="/transcribe_many_ui"
-            )
+            # Retry logic with exponential backoff
+            delay = HF_BASE_DELAY
+            last_error = None
             
-            # Parse results - match by filename index
-            transcriptions = {}
-            if result and len(result) >= 1:
-                df_dict = result[0]
-                if df_dict and 'data' in df_dict:
-                    for row in df_dict['data']:
-                        if len(row) >= 2:
-                            filename = str(row[0])
-                            text = str(row[-1])
-                            
-                            # Extract index from filename (e.g., "00042.wav" -> 42)
-                            try:
-                                # Try to find the 5-digit index in filename
-                                basename = os.path.basename(filename)
-                                name_part = os.path.splitext(basename)[0]
-                                idx = int(name_part)
-                                if idx in index_to_key:
-                                    transcriptions[index_to_key[idx]] = text
-                            except (ValueError, IndexError):
-                                # Fallback: try matching by position in results
-                                pass
+            for attempt in range(HF_MAX_RETRIES + 1):
+                try:
+                    client = self._ensure_client()
+                    
+                    # Call the API with all files
+                    result = client.predict(
+                        files=[handle_file(f) for f in temp_files],
+                        api_name="/transcribe_many_ui"
+                    )
+                    
+                    # Parse results - match by filename index
+                    transcriptions = {}
+                    if result and len(result) >= 1:
+                        df_dict = result[0]
+                        if df_dict and 'data' in df_dict:
+                            for row in df_dict['data']:
+                                if len(row) >= 2:
+                                    filename = str(row[0])
+                                    text = str(row[-1])
+                                    
+                                    # Extract index from filename (e.g., "00042.wav" -> 42)
+                                    try:
+                                        # Try to find the 5-digit index in filename
+                                        basename = os.path.basename(filename)
+                                        name_part = os.path.splitext(basename)[0]
+                                        idx = int(name_part)
+                                        if idx in index_to_key:
+                                            transcriptions[index_to_key[idx]] = text
+                                    except (ValueError, IndexError):
+                                        # Fallback: try matching by position in results
+                                        pass
+                    
+                    return transcriptions
+                    
+                except Exception as e:
+                    last_error = e
+                    if attempt < HF_MAX_RETRIES:
+                        print(f"⚠️ HF ASR batch error (attempt {attempt + 1}/{HF_MAX_RETRIES + 1}): {e}")
+                        print(f"   Чакаем {delay}с перад паўторнай спробай...")
+                        time.sleep(delay)
+                        delay *= HF_BACKOFF_FACTOR
+                        self._reset_client()  # Get fresh connection/token
+                    else:
+                        print(f"❌ HF ASR batch failed after {HF_MAX_RETRIES + 1} attempts: {e}")
             
-            return transcriptions
+            return {}  # Return empty on all retries failed
             
         finally:
             # Clean up temp files
