@@ -27,9 +27,8 @@ def sanitize_filename(name):
 
 def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_files):
     """Import analysis results from CSV file."""
-    global_results = get_global_results()
-    
     limit_files = int(float(limit_files)) if limit_files else 0
+    limit = limit_files if limit_files > 0 else None
     similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
 
     if file_obj is None:
@@ -38,6 +37,38 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
     try:
         df = pd.read_csv(file_obj.name)
         
+        # Load the full dataset (respecting limit if any) to make sure we have all original records
+        cached_ds = get_cached_dataset(dataset_name, limit)
+        if cached_ds is not None:
+            ds = cached_ds
+        else:
+            print(f"Loading dataset '{dataset_name}' for import...")
+            ds = utils.load_hf_dataset(dataset_name, limit=limit)
+            cache_dataset(dataset_name, limit, ds)
+            
+        global_results = get_global_results()
+        
+        # Initialize global_results if empty or size mismatch
+        if not global_results or len(global_results) != len(ds):
+            new_results = []
+            for idx, item in enumerate(ds):
+                ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+                new_results.append({
+                    "id": idx,
+                    "path": item['audio']['path'],
+                    "ref_text": ref_text,
+                    "hyp_text": "",
+                    "score": 0,
+                    "audio_array": item['audio']['array'],
+                    "sampling_rate": item['audio']['sampling_rate'],
+                    "model_used": "",
+                    "verification_status": "pending",
+                    "model_results": {}
+                })
+            set_global_results(new_results)
+            global_results = get_global_results()
+
+        # Deduplicate
         dedup_col = 'file_name' if 'file_name' in df.columns else ('path' if 'path' in df.columns else None)
         if dedup_col:
             df = df.drop_duplicates(subset=[dedup_col])
@@ -56,149 +87,88 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
         if rename_map:
             df = df.rename(columns=rename_map)
         
-        audio_map = _load_audio_map(dataset_name, df)
-        results = _process_csv_rows(df, audio_map, similarity_threshold)
-        _merge_results(results, similarity_threshold)
+        # Build lookups for fast matching
+        path_to_idx = {res['path']: i for i, res in enumerate(global_results) if res.get('path')}
+        basename_to_idx = {os.path.basename(res['path']): i for i, res in enumerate(global_results) if res.get('path')}
+        id_to_idx = {res['id']: i for i, res in enumerate(global_results) if res.get('id') is not None}
+        
+        def safe_str(val, default=''):
+            if pd.isna(val): return default
+            return str(val)
 
-        print(f"Total records after import: {len(get_global_results())}")
+        # Process each row in the CSV
+        for _, row in df.iterrows():
+            fname = safe_str(row.get('path', ''))
+            row_id = row.get('id')
+            
+            target_idx = None
+            if pd.notnull(row_id) and str(row_id).strip() != '' and (int_id := int(float(row_id))) in id_to_idx:
+                target_idx = id_to_idx[int_id]
+            elif fname in path_to_idx:
+                target_idx = path_to_idx[fname]
+            elif os.path.basename(fname) in basename_to_idx:
+                target_idx = basename_to_idx[os.path.basename(fname)]
+            
+            if target_idx is not None:
+                # Update the target record
+                ref = safe_str(row.get('ref_text', global_results[target_idx].get('ref_text', '')))
+                hyp = safe_str(row.get('hyp_text', ''))
+                score, norm_ref, norm_hyp = utils.calculate_similarity(ref, hyp)
+                
+                model_used = safe_str(row.get('model_used'), 'imported_csv')
+                verification_status = safe_str(row.get('verification_status'), 'unknown')
+                
+                if int(round(score)) >= similarity_threshold:
+                    verification_status = 'correct'
+                
+                model_results_dict = {}
+                model_results_val = row.get('model_results')
+                if pd.notnull(model_results_val) and str(model_results_val).strip():
+                    try:
+                        model_results_dict = json.loads(str(model_results_val))
+                    except:
+                        pass
+                
+                if hyp and score > 0:
+                    source_name = f"imported_{model_used}" if model_used != 'imported_csv' else 'imported_csv'
+                    if source_name not in model_results_dict:
+                        model_results_dict[source_name] = {"hyp_text": hyp, "score": score, "norm_ref": norm_ref, "norm_hyp": norm_hyp}
+                
+                merged_models = global_results[target_idx].get('model_results', {}).copy()
+                merged_models.update(model_results_dict)
+                global_results[target_idx]['model_results'] = merged_models
+                
+                if row.get('ref_text') and pd.notnull(row.get('ref_text')) and str(row.get('ref_text')).strip() != '':
+                    global_results[target_idx]['ref_text'] = ref
+                
+                best_model, best_res = select_best_model_result(merged_models, similarity_threshold)
+                if best_res:
+                    global_results[target_idx].update({
+                        "hyp_text": best_res['hyp_text'],
+                        "score": best_res['score'],
+                        "norm_ref": best_res['norm_ref'],
+                        "norm_hyp": best_res['norm_hyp'],
+                        "model_used": best_model
+                    })
+                    if global_results[target_idx].get('model_used') != 'manual':
+                        global_results[target_idx]['verification_status'] = 'correct' if int(round(best_res['score'])) >= similarity_threshold else 'incorrect'
+                else:
+                    global_results[target_idx].update({
+                        "hyp_text": hyp,
+                        "score": score,
+                        "norm_ref": norm_ref,
+                        "norm_hyp": norm_hyp,
+                        "model_used": model_used,
+                        "verification_status": verification_status
+                    })
+
+        set_global_results(global_results)
+        print(f"Total records after import: {len(global_results)}")
         return generate_dashboard_outputs(similarity_threshold)
         
     except Exception as e:
         print(f"Error importing CSV: {e}")
-        return "", "", pd.DataFrame()
-
-
-def _load_audio_map(dataset_name, df):
-    """Load audio map from dataset."""
-    audio_map = {}
-    limit = None
-    cached_ds = get_cached_dataset(dataset_name, limit)
-
-    if not cached_ds:
-        try:
-            target_paths = set()
-            for _, r_row in df.iterrows():
-                fname_t = str(r_row.get('path', ''))
-                if fname_t:
-                    target_paths.add(fname_t)
-                    target_paths.add(os.path.basename(fname_t))
-            
-            ds = utils.load_hf_dataset(dataset_name, limit=limit, allowed_paths=target_paths)
-            cached_ds = ds 
-        except Exception as e:
-            print(f"Warning: Could not load dataset: {e}")
-            cached_ds = []
-    
-    if cached_ds:
-        for item in cached_ds:
-            path = item['audio']['path']
-            if path:
-                audio_map[os.path.basename(path)] = item
-                audio_map[path] = item
-    
-    return audio_map
-
-
-def _process_csv_rows(df, audio_map, similarity_threshold):
-    """Process CSV rows into results."""
-    results = []
-    
-    def safe_str(val, default=''):
-        if pd.isna(val): return default
-        return str(val)
-
-    for idx, row in df.iterrows():
-        fname = safe_str(row.get('path', ''))
-        ref = safe_str(row.get('ref_text', ''))
-        hyp = safe_str(row.get('hyp_text', ''))
-
-        score, norm_ref, norm_hyp = utils.calculate_similarity(ref, hyp)
-        model_used = safe_str(row.get('model_used'), 'imported_csv')
-        verification_status = safe_str(row.get('verification_status'), 'unknown')
-        
-        if int(round(score)) >= similarity_threshold:
-            verification_status = 'correct'
-        
-        row_id = row.get('id', idx)
-        
-        item = audio_map.get(fname) or audio_map.get(os.path.basename(fname))
-        audio_array = item['audio']['array'] if item else None
-        sampling_rate = item['audio']['sampling_rate'] if item else None
-        
-        model_results = {}
-        model_results_val = row.get('model_results')
-        if pd.notnull(model_results_val) and model_results_val:
-            try:
-                model_results = json.loads(str(model_results_val))
-            except:
-                pass
-        
-        if hyp and score > 0:
-            source_name = f"imported_{model_used}" if model_used != 'imported_csv' else 'imported_csv'
-            model_results[source_name] = {"hyp_text": hyp, "score": score, "norm_ref": norm_ref, "norm_hyp": norm_hyp}
-        
-        results.append({
-            "id": int(row_id) if pd.notnull(row_id) else idx,
-            "path": fname, "score": score, "ref_text": ref, "hyp_text": hyp,
-            "audio_array": audio_array, "sampling_rate": sampling_rate,
-            "status": "processed", "verification_status": verification_status,
-            "model_used": model_used, "norm_ref": norm_ref, "norm_hyp": norm_hyp,
-            "model_results": model_results
-        })
-    
-    return results
-
-
-def _merge_results(results, similarity_threshold):
-    """Merge new results into global_results."""
-    global_results = get_global_results()
-    
-    if not global_results:
-        set_global_results(results)
-        return
-    
-    updated = list(global_results)
-    existing_map = {r.get('path'): i for i, r in enumerate(updated) if r.get('path')}
-    used_ids = {r.get('id') for r in updated if r.get('id') is not None}
-    max_id = max(used_ids) if used_ids else -1
-    
-    for new_item in results:
-        path = new_item.get('path')
-        
-        if path and path in existing_map:
-            idx = existing_map[path]
-            old_item = updated[idx]
-            
-            merged = old_item.get('model_results', {}).copy()
-            merged.update(new_item.get('model_results', {}))
-            new_item['model_results'] = merged
-
-            best_model, best_res = select_best_model_result(merged, similarity_threshold)
-            if best_res:
-                new_item.update({
-                    "hyp_text": best_res['hyp_text'], "score": best_res['score'],
-                    "norm_ref": best_res['norm_ref'], "norm_hyp": best_res['norm_hyp'],
-                    "model_used": best_model
-                })
-                if old_item.get('model_used') != 'manual':
-                    new_item['verification_status'] = 'correct' if int(round(best_res['score'])) >= similarity_threshold else 'incorrect'
-
-            if new_item.get('audio_array') is None and old_item.get('audio_array') is not None:
-                new_item['audio_array'] = old_item['audio_array']
-                new_item['sampling_rate'] = old_item['sampling_rate']
-            
-            new_item['id'] = old_item.get('id', new_item.get('id'))
-            updated[idx] = new_item
-        else:
-            if new_item.get('id') in used_ids:
-                max_id += 1
-                new_item['id'] = max_id
-            updated.append(new_item)
-            if new_item.get('id') is not None:
-                used_ids.add(new_item['id'])
-                max_id = max(max_id, new_item['id'])
-    
-    set_global_results(updated)
+        return generate_dashboard_outputs(similarity_threshold)
 
 
 def save_results_csv(dataset_name):
