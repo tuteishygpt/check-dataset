@@ -10,14 +10,14 @@ import soundfile as sf
 import numpy as np
 import librosa
 
-def load_hf_dataset(dataset_name, split="train", limit=None, allowed_paths=None):
+def load_hf_dataset(dataset_name, split="train", limit=None, allowed_paths=None, hf_token=None):
     """
     Loads the dataset from Hugging Face with manual audio loading.
     Avoids torchcodec dependency by loading audio via librosa.
     """
     try:
         # Load dataset with audio decoding disabled
-        ds = load_dataset(dataset_name, split=split)
+        ds = load_dataset(dataset_name, split=split, token=hf_token)
         
         # Cast audio column to disable automatic decoding (returns raw bytes)
         if 'audio' in ds.features:

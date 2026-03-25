@@ -39,6 +39,7 @@ def run_analysis(
     similarity_threshold: int,
     batch_mode: bool = False,
     recheck_problematic: bool = False,
+    hf_token: str = None,
     progress=gr.Progress()
 ):
     global_results = get_global_results()
@@ -55,7 +56,8 @@ def run_analysis(
     if is_hf_asr_model(model_name):
         outputs = _run_hf_asr_analysis(
             model_name, dataset_name, limit_files,
-            similarity_threshold, recheck_problematic, progress
+            similarity_threshold, recheck_problematic,
+            hf_token, progress
         )
         save_results_csv(dataset_name, auto_prefix=True)
         return outputs
@@ -84,17 +86,20 @@ def run_analysis(
         if batch_mode:
             outputs = _run_batch_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
-                similarity_threshold, recheck_problematic, progress
+                similarity_threshold, recheck_problematic, 
+                hf_token, progress
             )
         elif recheck_problematic:
             outputs = _run_recheck_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
-                similarity_threshold, gen_config, progress
+                similarity_threshold, gen_config, 
+                hf_token, progress
             )
         else:
             outputs = _run_fresh_analysis(
                 gemini_tool, model_name, dataset_name, limit_files,
-                similarity_threshold, gen_config, progress
+                similarity_threshold, gen_config, 
+                hf_token, progress
             )
             
         save_results_csv(dataset_name, auto_prefix=True)
@@ -106,7 +111,8 @@ def run_analysis(
 
 def _run_batch_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    similarity_threshold, recheck_problematic, progress
+    similarity_threshold, recheck_problematic, 
+    hf_token, progress
 ):
     """Run batch processing mode."""
     global_results = get_global_results()
@@ -134,7 +140,7 @@ def _run_batch_analysis(
             ds = cached_ds
         else:
             progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-            ds = utils.load_hf_dataset(dataset_name, limit=limit)
+            ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
             cache_dataset(dataset_name, limit, ds)
         
         # Init results if fresh run
@@ -284,7 +290,8 @@ def _run_batch_analysis(
 
 def _run_recheck_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    similarity_threshold, gen_config, progress
+    similarity_threshold, gen_config, 
+    hf_token, progress
 ):
     """Run recheck of problematic files."""
     global_results = get_global_results()
@@ -315,7 +322,7 @@ def _run_recheck_analysis(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.05, desc=f"Датасет закэшаваны")
     
@@ -400,7 +407,8 @@ def _run_recheck_analysis(
 
 def _run_fresh_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    similarity_threshold, gen_config, progress
+    similarity_threshold, gen_config, 
+    hf_token, progress
 ):
     """Run fresh analysis on all files."""
     limit = int(limit_files) if limit_files > 0 else None
@@ -411,7 +419,7 @@ def _run_fresh_analysis(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.1, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
 
@@ -459,13 +467,14 @@ def _run_hf_asr_analysis(
     limit_files: int,
     similarity_threshold: int,
     recheck_problematic: bool,
+    hf_token: str,
     progress
 ):
     """Run analysis using Hugging Face ASR model."""
     global_results = get_global_results()
     
     try:
-        hf_client = get_hf_asr_client(model_name)
+        hf_client = get_hf_asr_client(model_name, hf_token=hf_token)
         progress(0.05, desc=f"Падключэнне да HF Space: {model_name}...")
     except Exception as e:
         raise gr.Error(f"Памылка падключэння да HF: {e}")
@@ -473,18 +482,18 @@ def _run_hf_asr_analysis(
     if recheck_problematic:
         return _run_hf_recheck_analysis(
             hf_client, model_name, dataset_name, limit_files,
-            similarity_threshold, progress
+            similarity_threshold, hf_token, progress
         )
     else:
         return _run_hf_fresh_analysis(
             hf_client, model_name, dataset_name, limit_files,
-            similarity_threshold, progress
+            similarity_threshold, hf_token, progress
         )
 
 
 def _run_hf_fresh_analysis(
     hf_client, model_name, dataset_name, limit_files,
-    similarity_threshold, progress
+    similarity_threshold, hf_token, progress
 ):
     """Run fresh analysis using HF ASR with batch processing."""
     limit = int(limit_files) if limit_files > 0 else None
@@ -495,7 +504,7 @@ def _run_hf_fresh_analysis(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.1, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
     
@@ -591,7 +600,7 @@ def _run_hf_fresh_analysis(
 
 def _run_hf_recheck_analysis(
     hf_client, model_name, dataset_name, limit_files,
-    similarity_threshold, progress
+    similarity_threshold, hf_token, progress
 ):
     """Run recheck of problematic files using HF ASR with batch processing."""
     global_results = get_global_results()
@@ -622,7 +631,7 @@ def _run_hf_recheck_analysis(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.05, desc=f"Датасет закэшаваны")
     

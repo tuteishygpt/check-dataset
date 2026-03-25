@@ -62,7 +62,7 @@ def create_interface():
                 hf_token = gr.Textbox(
                     label="Hugging Face Token",
                     type="password",
-                    placeholder="Увядзіце ваш HF Token (для стварэння датасэту)...",
+                    placeholder="Увядзіце ваш HF Token (для доступу да зачыненых дадзеных і мадэляў)...",
                     elem_id="hf_token_input"
                 )
 
@@ -72,10 +72,13 @@ def create_interface():
                     placeholder="username/dataset_name"
                 )
 
-                model_name = gr.Dropdown(
+                _asr_choices = get_all_asr_model_choices()
+                _default_model = "gemini-2.5-flash-lite"
+                model_name = gr.Radio(
                     label="Мадэль распазнавання",
-                    choices=get_all_asr_model_choices(),
-                    value="gemini-2.5-flash-lite"
+                    choices=_asr_choices,
+                    value=_default_model if _default_model in _asr_choices else (_asr_choices[0] if _asr_choices else None),
+                    interactive=True
                 )
 
                 limit_files = gr.Number(
@@ -194,7 +197,7 @@ def create_interface():
 
         analyze_event = analyze_btn.click(
             fn=run_analysis,
-            inputs=[api_key, dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold, batch_mode, recheck_problematic],
+            inputs=[api_key, dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold, batch_mode, recheck_problematic, hf_token],
             outputs=[stats_output, flagged_output, results_table]
         )
         
@@ -206,7 +209,7 @@ def create_interface():
 
         smart_analyze_event = smart_analyze_btn.click(
             fn=run_smart_analysis,
-            inputs=[api_key, dataset_name, limit_files, temperature, thinking_budget, similarity_threshold, recheck_problematic],
+            inputs=[api_key, dataset_name, limit_files, temperature, thinking_budget, similarity_threshold, recheck_problematic, hf_token],
             outputs=[stats_output, flagged_output, results_table]
         )
         

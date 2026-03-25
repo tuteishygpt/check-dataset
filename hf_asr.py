@@ -27,19 +27,21 @@ HF_ASR_MODELS = {
 class HuggingFaceASR:
     """Client for Hugging Face ASR Spaces."""
     
-    def __init__(self, space_id: str):
+    def __init__(self, space_id: str, hf_token: str = None):
         """Initialize the HF ASR client.
         
         Args:
             space_id: The Hugging Face Space ID (e.g., "archivartaunik/ASR_BEL_SeamlessM4Tv2_Batch")
+            hf_token: Optional Hugging Face Token for private spaces or priority access.
         """
         self.space_id = space_id
+        self.hf_token = hf_token
         self.client = None
     
     def _ensure_client(self):
         """Lazily initialize the Gradio client."""
         if self.client is None:
-            self.client = Client(self.space_id)
+            self.client = Client(self.space_id, token=self.hf_token)
         return self.client
     
     def _reset_client(self):
@@ -92,8 +94,8 @@ class HuggingFaceASR:
                     
                 except Exception as e:
                     last_error = e
-                    if "exceeded your Pro GPU quota" in str(e):
-                        print(f"🚨 Крытычная памылка: перавышана квота Pro GPU! Працэс спыняецца.")
+                    if "GPU quota" in str(e):
+                        print(f"🚨 Крытычная памылка: перавышана квота GPU! Працэс спыняецца.")
                         raise RuntimeError("QUOTA_EXCEEDED")
                     
                     if attempt < HF_MAX_RETRIES:
@@ -177,8 +179,8 @@ class HuggingFaceASR:
                     
                 except Exception as e:
                     last_error = e
-                    if "exceeded your Pro GPU quota" in str(e):
-                        print(f"🚨 Крытычная памылка: перавышана квота Pro GPU! Працэс спыняецца.")
+                    if "GPU quota" in str(e):
+                        print(f"🚨 Крытычная памылка: перавышана квота GPU! Працэс спыняецца.")
                         raise RuntimeError("QUOTA_EXCEEDED")
                     
                     if attempt < HF_MAX_RETRIES:
@@ -204,11 +206,12 @@ class HuggingFaceASR:
                 pass
 
 
-def get_hf_asr_client(model_name: str) -> HuggingFaceASR:
+def get_hf_asr_client(model_name: str, hf_token: str = None) -> HuggingFaceASR:
     """Get an HF ASR client for the given model name.
     
     Args:
         model_name: Name of the model from HF_ASR_MODELS
+        hf_token: Optional Hugging Face Token.
         
     Returns:
         HuggingFaceASR client instance
@@ -217,7 +220,7 @@ def get_hf_asr_client(model_name: str) -> HuggingFaceASR:
         raise ValueError(f"Unknown HF ASR model: {model_name}")
     
     model_config = HF_ASR_MODELS[model_name]
-    return HuggingFaceASR(model_config["space_id"])
+    return HuggingFaceASR(model_config["space_id"], hf_token=hf_token)
 
 
 def is_hf_asr_model(model_name: str) -> bool:

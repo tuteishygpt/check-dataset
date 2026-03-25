@@ -20,6 +20,7 @@ def run_smart_analysis(
     thinking_budget: int,
     similarity_threshold: int,
     recheck_problematic: bool = False,
+    hf_token: str = None,
     progress=gr.Progress()
 ):
     global_results = get_global_results()
@@ -55,12 +56,14 @@ def run_smart_analysis(
         if recheck_problematic:
             results = _smart_recheck_first_pass(
                 gemini_tool, model_name, step_desc, dataset_name,
-                limit_files, similarity_threshold, gen_config, progress
+                limit_files, similarity_threshold, gen_config, 
+                hf_token, progress
             )
         else:
             results = _smart_fresh_first_pass(
                 gemini_tool, model_name, step_desc, dataset_name,
-                limit_files, similarity_threshold, gen_config, progress
+                limit_files, similarity_threshold, gen_config, 
+                hf_token, progress
             )
 
         # STEP 2-4: Iterative improvement
@@ -142,7 +145,8 @@ def run_smart_analysis(
 
 def _smart_recheck_first_pass(
     gemini_tool, model_name, step_desc, dataset_name,
-    limit_files, similarity_threshold, gen_config, progress
+    limit_files, similarity_threshold, gen_config, 
+    hf_token, progress
 ):
     """First pass for recheck mode."""
     global_results = get_global_results()
@@ -175,7 +179,7 @@ def _smart_recheck_first_pass(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.03, desc=f"Датасет закэшаваны")
     
@@ -257,7 +261,8 @@ def _smart_recheck_first_pass(
 
 def _smart_fresh_first_pass(
     gemini_tool, model_name, step_desc, dataset_name,
-    limit_files, similarity_threshold, gen_config, progress
+    limit_files, similarity_threshold, gen_config, 
+    hf_token, progress
 ):
     """First pass for fresh analysis."""
     limit = int(limit_files) if limit_files > 0 else None
@@ -268,7 +273,7 @@ def _smart_fresh_first_pass(
         ds = cached_ds
     else:
         progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit)
+        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
         cache_dataset(dataset_name, limit, ds)
         progress(0.05, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
 
