@@ -23,6 +23,9 @@ def run_smart_analysis(
     hf_token: str = None,
     progress=gr.Progress()
 ):
+    from core.state import set_stop_requested, get_stop_requested
+    set_stop_requested(False)
+    
     global_results = get_global_results()
     
     # Robust type conversion for Gradio inputs
@@ -71,6 +74,9 @@ def run_smart_analysis(
         step_progress_size = 0.25
 
         for step_idx in range(1, len(models)):
+            if get_stop_requested():
+                print("🛑 Разумны аналіз спынены")
+                break
             model_name = models[step_idx][0]
             step_desc = models[step_idx][1]
 
@@ -90,6 +96,8 @@ def run_smart_analysis(
                      desc=f"{step_desc}: пераапрацоўка {len(problematic_indices)} праблемных запісаў...")
 
             for j, res_idx in enumerate(problematic_indices):
+                if get_stop_requested():
+                    break
                 progress(base_progress + (step_idx - 1) * step_progress_size + (j + 1) / len(problematic_indices) * step_progress_size,
                          desc=f"{step_desc}: запіс {j+1}/{len(problematic_indices)}")
 
@@ -135,12 +143,19 @@ def run_smart_analysis(
                 else:
                     print(f"⏭️ SKIP UPDATE [Idx={res_idx}]: Best score {best_result['score'] if best_result else 'N/A'} is not better than {result.get('score')} and not meeting threshold {similarity_threshold}")
 
+            # Intermediate save after each step
+            set_global_results(results)
+            save_results_csv(dataset_name, auto_prefix=False)
+
         set_global_results(results)
-        save_results_csv(dataset_name, auto_prefix=True)
         return generate_dashboard_outputs(similarity_threshold)
 
     except Exception as e:
+        print(f"❌ Smart Analysis failed: {e}")
+        save_results_csv(dataset_name, auto_prefix=True)
         raise gr.Error(f"Памылка: {e}")
+    finally:
+        save_results_csv(dataset_name, auto_prefix=True)
 
 
 def _smart_recheck_first_pass(
@@ -195,6 +210,9 @@ def _smart_recheck_first_pass(
     progress(0.05, desc=f"{step_desc}: пераправерка {len(problematic_indices)} запісаў...")
 
     for j, res_idx in enumerate(problematic_indices):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            break
         progress(0.05 + (j + 1) / len(problematic_indices) * 0.20, desc=f"{step_desc}: запіс {j+1}/{len(problematic_indices)}")
 
         result = results[res_idx]
@@ -255,6 +273,11 @@ def _smart_recheck_first_pass(
                 "model_used": best_model,
                 "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
             })
+        
+        # Periodic save every 20 items
+        if (j + 1) % 20 == 0:
+            set_global_results(results)
+            save_results_csv(dataset_name, auto_prefix=False)
 
     return results
 
@@ -281,6 +304,9 @@ def _smart_fresh_first_pass(
     progress(0.05, desc=f"{step_desc}: апрацоўка ўсіх {len(ds)} запісаў...")
 
     for idx, item in enumerate(ds):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            break
         progress(0.05 + (idx + 1) / len(ds) * 0.20, desc=f"{step_desc}: файл {idx+1}/{len(ds)}")
 
         audio_data = item['audio']['array']
@@ -311,5 +337,10 @@ def _smart_fresh_first_pass(
                 }
             }
         })
+        
+        # Periodic save every 20 items
+        if (idx + 1) % 20 == 0:
+            set_global_results(results)
+            save_results_csv(dataset_name, auto_prefix=False)
 
     return results

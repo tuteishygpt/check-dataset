@@ -26,22 +26,47 @@ def load_hf_dataset(dataset_name, split="train", limit=None, allowed_paths=None,
         if limit:
             ds = ds.select(range(min(limit, len(ds))))
         
-        # Process each item to load audio manually
-        processed_items = []
+        # 1. Спачатку збіраем усе метаданыя без загрузкі аўдыя-байтаў
+        unique_items_map = {}
+        total_ds_count = len(ds)
+        print(f"🔍 Загружана метаданых: {total_ds_count} запісаў")
+
         for item in ds:
-             # Filter by allowed_paths if provided
+            # Вызначаем імя файла для дэдублікацыі
+            audio_info = item.get('audio', {})
+            audio_path = audio_info.get('path', 'unknown') if isinstance(audio_info, dict) else 'unknown'
+            file_name = os.path.basename(audio_path)
+
+            if audio_path == 'unknown':
+                # Калі шлях невядомы, проста дадаем (не варта дэдублікаваць па 'unknown')
+                 unique_items_map[f"unknown_{len(unique_items_map)}"] = item
+            else:
+                # Падтрымліваем толькі апошнюю версію па імені файла
+                unique_items_map[file_name] = item
+
+        # 2. Прымяняем ліміт пасля дэдублікацыі
+        final_unique_list = list(unique_items_map.values())
+        unique_count = len(final_unique_list)
+        print(f"✨ Пасля выдалення дубляў засталося: {unique_count} унікальных файлаў")
+
+        if limit and limit > 0:
+            final_unique_list = final_unique_list[:limit]
+            print(f"✂️ Прыменены ліміт: пакінута {len(final_unique_list)} файлаў")
+
+        # 3. Цяпер загружаем аўдыя толькі для выбраных унікальных файлаў
+        processed_items = []
+        for i, item in enumerate(final_unique_list):
+            # Фільтрацыя па дазволеных шляхах (калі ёсць)
             if allowed_paths is not None:
-                audio_info_check = item.get('audio', {})
-                if isinstance(audio_info_check, dict):
-                    path_check = audio_info_check.get('path')
-                    if not path_check:
-                         continue
-                    if path_check not in allowed_paths and os.path.basename(path_check) not in allowed_paths:
-                        continue
-            
+                audio_info = item.get('audio', {})
+                path_check = audio_info.get('path') if isinstance(audio_info, dict) else None
+                if not path_check: continue
+                if path_check not in allowed_paths and os.path.basename(path_check) not in allowed_paths:
+                    continue
+
             processed_item = dict(item)
             
-            # Handle audio loading manually from raw bytes
+            # Загрузка і дэкадаванне аўдыя
             if 'audio' in item:
                 audio_info = item['audio']
                 if isinstance(audio_info, dict):
@@ -49,7 +74,7 @@ def load_hf_dataset(dataset_name, split="train", limit=None, allowed_paths=None,
                     audio_path = audio_info.get('path', 'unknown')
                     
                     if audio_bytes_data:
-                        # Audio is in bytes format - load with librosa
+                        # Загрузка праз librosa
                         audio_buffer = io.BytesIO(audio_bytes_data)
                         audio_array, sr = librosa.load(audio_buffer, sr=None)
                     else:
@@ -62,7 +87,8 @@ def load_hf_dataset(dataset_name, split="train", limit=None, allowed_paths=None,
                     }
             
             processed_items.append(processed_item)
-        
+
+        print(f"✅ Гатова да апрацоўкі: {len(processed_items)} файлаў")
         return processed_items
     except Exception as e:
         raise RuntimeError(f"Error loading dataset: {e}")

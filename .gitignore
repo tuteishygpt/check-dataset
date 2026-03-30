@@ -9,4 +9,5 @@ ui/__pycache__/gradio_app.cpython-313.pyc
 __pycache__/hf_asr.cpython-313.pyc
 __pycache__/utils.cpython-313.pyc
 *.csv
+*.pyc
 gemini_file_registry.json

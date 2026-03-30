@@ -142,6 +142,9 @@ class GeminiIntegrator:
         final_prompt = prompt if prompt else DEFAULT_TRANSCRIPTION_PROMPT
 
         for attempt in range(max_retries):
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                return "Error: Cancelled by user"
             try:
                 # Generate content
                 response = self.client.models.generate_content(
@@ -201,6 +204,9 @@ class GeminiIntegrator:
         self._prepare_files_for_batch(pending)
 
         for chunk_idx in range(0, len(pending), normalized_chunk_size):
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                break
             chunk = pending[chunk_idx : chunk_idx + normalized_chunk_size]
             self._process_chunk(chunk, chunk_idx // normalized_chunk_size, model_name, prompt_text, results)
 
@@ -209,6 +215,9 @@ class GeminiIntegrator:
     def _prepare_files_for_batch(self, tasks: List[BatchTask]):
         """Uploads files if they are not already in the registry/cloud."""
         for task in tasks:
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                break
             # Check registry
             entry = self.file_registry.get_file(task.path)
             
@@ -409,6 +418,9 @@ class GeminiIntegrator:
         }
 
         while True:
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                raise RuntimeError("Batch job polling cancelled by user")
             rest_job = self._get_batch_job_rest(batch_name)
             state = rest_job.get("state") or (rest_job.get("metadata") or {}).get("state") or (rest_job.get("batch") or {}).get("state")
             

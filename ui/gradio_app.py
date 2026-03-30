@@ -219,8 +219,9 @@ def create_interface():
             outputs=[cache_status]
         )
 
+        from core.state import set_stop_requested
         stop_btn.click(
-            fn=None,
+            fn=lambda: [set_stop_requested(True), gr.Info("Спыненне аналізу...")][0],
             inputs=None,
             outputs=None,
             cancels=[analyze_event, smart_analyze_event]

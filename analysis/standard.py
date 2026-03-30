@@ -42,6 +42,9 @@ def run_analysis(
     hf_token: str = None,
     progress=gr.Progress()
 ):
+    from core.state import set_stop_requested, get_stop_requested
+    set_stop_requested(False)
+    
     global_results = get_global_results()
     
     # Robust type conversion for Gradio inputs
@@ -102,11 +105,16 @@ def run_analysis(
                 hf_token, progress
             )
             
-        save_results_csv(dataset_name, auto_prefix=True)
         return outputs
 
     except Exception as e:
+        print(f"❌ Analysis failed: {e}")
+        # Final save on error
+        save_results_csv(dataset_name, auto_prefix=True)
         raise gr.Error(f"Памылка: {e}")
+    finally:
+        # Final save always (unless error already saved it with prefix)
+        save_results_csv(dataset_name, auto_prefix=True)
 
 
 def _run_batch_analysis(
@@ -214,6 +222,9 @@ def _run_batch_analysis(
             ds_map[di] = d_item
 
         for global_res_idx in target_indices:
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                break
             res = global_results[global_res_idx]
             path = res.get('path', '')
             
@@ -231,6 +242,9 @@ def _run_batch_analysis(
     else:
         # Tasks for all
         for idx, res in enumerate(global_results):
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                break
             item = ds[idx] 
             t = prepare_task(idx, res, item)
             if t:
@@ -338,6 +352,10 @@ def _run_recheck_analysis(
     progress(0.1, desc=f"Пераправерка {len(target_indices)} файлаў...")
     
     for j, idx in enumerate(target_indices):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            print("🛑 Аналіз спынены карыстальнікам")
+            break
         progress(0.1 + (j + 1) / len(target_indices) * 0.9, desc=f"Праверка {j+1}/{len(target_indices)}")
         
         result = global_results[idx]
@@ -401,6 +419,10 @@ def _run_recheck_analysis(
                 "model_used": best_model,
                 "verification_status": "correct" if best_result['score'] >= similarity_threshold else "incorrect"
             })
+        
+        # Periodic save every 20 items
+        if (j + 1) % 20 == 0:
+            save_results_csv(dataset_name, auto_prefix=False)
 
     return generate_dashboard_outputs(similarity_threshold)
 
@@ -426,6 +448,10 @@ def _run_fresh_analysis(
     results = []
 
     for idx, item in enumerate(ds):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            print("🛑 Аналіз спынены карыстальнікам")
+            break
         progress((idx + 1) / len(ds), desc=f"Апрацоўка файла {idx+1}/{len(ds)}")
 
         audio_data = item['audio']['array']
@@ -456,6 +482,11 @@ def _run_fresh_analysis(
                 }
             }
         })
+        
+        # Periodic save every 20 items
+        if (idx + 1) % 20 == 0:
+            set_global_results(results) # Update global state to save current results
+            save_results_csv(dataset_name, auto_prefix=False)
     
     set_global_results(results)
     return generate_dashboard_outputs(similarity_threshold)
@@ -530,6 +561,10 @@ def _run_hf_fresh_analysis(
     num_batches = (total_items + batch_size - 1) // batch_size
     
     for batch_num in range(num_batches):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            print("🛑 Аналіз спынены карыстальнікам")
+            break
         # Delay between batches to avoid rate limiting (skip for first batch)
         if batch_num > 0:
             print(f"⏳ Чакаем 5с перад наступным пакетам...")
@@ -593,6 +628,8 @@ def _run_hf_fresh_analysis(
             # Skip items with no transcription result
         
         print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {transcribed_count}/{len(batch_items)} транскрыбавана")
+        set_global_results(results)
+        save_results_csv(dataset_name, auto_prefix=False)
     
     set_global_results(results)
     return generate_dashboard_outputs(similarity_threshold)
@@ -696,6 +733,10 @@ def _run_hf_recheck_analysis(
     progress(0.1, desc=f"Пераправерка {total_items} файлаў у {num_batches} пакетах (HF ASR)...")
     
     for batch_num in range(num_batches):
+        from core.state import get_stop_requested
+        if get_stop_requested():
+            print("🛑 Аналіз спынены карыстальнікам")
+            break
         # Delay between batches to avoid rate limiting (skip for first batch)
         if batch_num > 0:
             print(f"⏳ Чакаем 5с перад наступным пакетам...")
@@ -766,5 +807,6 @@ def _run_hf_recheck_analysis(
                 })
         
         print(f"✅ Пакет {batch_num + 1}/{num_batches} завершаны: {transcribed_count}/{len(batch_items)} транскрыбавана")
+        save_results_csv(dataset_name, auto_prefix=False)
     
     return generate_dashboard_outputs(similarity_threshold)
