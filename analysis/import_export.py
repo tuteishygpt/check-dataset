@@ -168,8 +168,9 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
         return generate_dashboard_outputs(similarity_threshold)
         
     except Exception as e:
-        print(f"Error importing CSV: {e}")
-        return generate_dashboard_outputs(similarity_threshold)
+        error_msg = f"Error importing CSV: {e}"
+        print(error_msg)
+        raise gr.Error(error_msg)
 
 
 def save_results_csv(dataset_name, auto_prefix=False):
@@ -231,8 +232,9 @@ def save_results_csv(dataset_name, auto_prefix=False):
         
         return abs_path
     except Exception as e:
-        print(f"Error creating CSV: {e}")
-        return None
+        error_msg = f"Error creating CSV: {e}"
+        print(error_msg)
+        raise gr.Error(error_msg)
 
 
 def _find_index_by_id(record_id: int):
@@ -301,6 +303,7 @@ def verify_action(data_str, similarity_threshold, dataset_name):
             save_df.to_csv(f"{clean_name}_results.csv", index=False)
         except Exception as e:
             print(f"Error saving: {e}")
+            gr.Warning(f"Дадзеныя зменены, але не ўдалося захаваць CSV: {e}")
 
         return generate_dashboard_outputs(similarity_threshold)
     except Exception as e:
