@@ -287,7 +287,99 @@ def _smart_fresh_first_pass(
     limit_files, similarity_threshold, gen_config, 
     hf_token, progress
 ):
-    """First pass for fresh analysis."""
+    """First pass for fresh analysis, resuming from pending files if they exist."""
+    global_results = get_global_results()
+
+    # Check for pending (unprocessed) files from a previous interrupted run
+    pending_indices = [
+        i for i, r in enumerate(global_results)
+        if r is not None and r.get('verification_status') == 'pending'
+    ]
+
+    if pending_indices:
+        print(f"▶️ Smart: аднаўленне — знойдзена {len(pending_indices)} неапрацаваных файлаў (pending)")
+        if limit_files > 0:
+            pending_indices = pending_indices[:limit_files]
+
+        # Load dataset to get audio for pending items
+        limit = None
+        cached_ds = get_cached_dataset(dataset_name, limit)
+        if cached_ds is not None:
+            progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
+            ds = cached_ds
+        else:
+            progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
+            ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
+            cache_dataset(dataset_name, limit, ds)
+            progress(0.03, desc=f"Датасет закэшаваны")
+
+        # Build audio map
+        audio_map = {}
+        for item in ds:
+            path = item['audio']['path']
+            if path:
+                audio_map[os.path.basename(path)] = item
+                audio_map[path] = item
+
+        results = global_results
+        progress(0.05, desc=f"{step_desc}: апрацоўка {len(pending_indices)} pending запісаў...")
+
+        for j, idx in enumerate(pending_indices):
+            from core.state import get_stop_requested
+            if get_stop_requested():
+                break
+            progress(0.05 + (j + 1) / len(pending_indices) * 0.20, desc=f"{step_desc}: запіс {j+1}/{len(pending_indices)}")
+
+            result = results[idx]
+            audio_data = result.get('audio_array')
+            sampling_rate = result.get('sampling_rate')
+            ref_text = result.get('ref_text', "")
+
+            if audio_data is None or (hasattr(audio_data, '__len__') and len(audio_data) == 0):
+                path = result.get('path', '')
+                item = audio_map.get(path) or audio_map.get(os.path.basename(path))
+                if not item:
+                    rec_id = result.get('id')
+                    if rec_id is not None:
+                        try:
+                            rec_id = int(rec_id)
+                            if 0 <= rec_id < len(ds):
+                                item = ds[rec_id]
+                        except:
+                            pass
+                if item:
+                    audio_data = item['audio']['array']
+                    sampling_rate = item['audio']['sampling_rate']
+                    results[idx]['audio_array'] = audio_data
+                    results[idx]['sampling_rate'] = sampling_rate
+                else:
+                    print(f"Smart Fresh Resume: Skipping index {idx}, audio not found.")
+                    continue
+
+            hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+            score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
+
+            if 'model_results' not in results[idx]:
+                results[idx]['model_results'] = {}
+            results[idx]['model_results'][model_name] = {
+                "hyp_text": hyp_text, "score": score,
+                "norm_ref": norm_ref, "norm_hyp": norm_hyp
+            }
+            results[idx].update({
+                "hyp_text": hyp_text, "score": score,
+                "norm_ref": norm_ref, "norm_hyp": norm_hyp,
+                "audio_array": audio_data, "sampling_rate": sampling_rate,
+                "model_used": model_name,
+                "verification_status": "correct" if score >= similarity_threshold else "incorrect"
+            })
+
+            if (j + 1) % 20 == 0:
+                set_global_results(results)
+                save_results_csv(dataset_name, auto_prefix=False)
+
+        return results
+
+    # No pending files — full fresh run
     limit = int(limit_files) if limit_files > 0 else None
 
     cached_ds = get_cached_dataset(dataset_name, limit)
@@ -337,7 +429,7 @@ def _smart_fresh_first_pass(
                 }
             }
         })
-        
+
         # Periodic save every 20 items
         if (idx + 1) % 20 == 0:
             set_global_results(results)

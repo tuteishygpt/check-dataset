@@ -33,11 +33,17 @@ def generate_dashboard_outputs(similarity_threshold: int):
     # Statistics
     total_files = len(df)
 
-    # Problematic: below threshold AND NOT verified as correct
-    flagged_mask = (df['score'] < similarity_threshold) & (df['verification_status'] != 'correct')
+    # Problematic: below threshold AND NOT verified as correct AND NOT pending
+    flagged_mask = (df['score'] < similarity_threshold) & (df['verification_status'] != 'correct') & (df['verification_status'] != 'pending')
     flagged_count = int(flagged_mask.sum())
     flagged_pct = (flagged_count / total_files * 100) if total_files > 0 else 0.0
-    avg_score = df['score'].mean() if len(df) > 0 else 0
+    
+    # Calculate average score only for processed files
+    processed_df = df[df['verification_status'] != 'pending']
+    avg_score = processed_df['score'].mean() if not processed_df.empty else 0.0
+    
+    # Unprocessed (pending) files
+    pending_count = len(df[df['verification_status'] == 'pending'])
 
     # Model stats
     model_stats = ""
@@ -67,6 +73,11 @@ def generate_dashboard_outputs(similarity_threshold: int):
                     padding: 20px; border-radius: 12px; text-align: center; flex: 1; color: white;">
             <h3 style="margin: 0; font-size: 2em;">{total_files}</h3>
             <p style="margin: 5px 0 0 0; opacity: 0.9;">📁 Усяго файлаў</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+                    padding: 20px; border-radius: 12px; text-align: center; flex: 1; color: #1e293b;">
+            <h3 style="margin: 0; font-size: 2em;">{pending_count}</h3>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">⏳ Неапрацаваных</p>
         </div>
         <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                     padding: 20px; border-radius: 12px; text-align: center; flex: 1; color: white;">

@@ -1,14 +1,15 @@
-analysis/__pycache__/standard.cpython-313.pyc
-analysis/__pycache__/smart.cpython-313.pyc
-__pycache__/hf_asr.cpython-313.pyc
-analysis/__pycache__/import_export.cpython-313.pyc
-analysis/__pycache__/import_export.cpython-313.pyc
-analysis/__pycache__/smart.cpython-313.pyc
-analysis/__pycache__/standard.cpython-313.pyc
-ui/__pycache__/gradio_app.cpython-313.pyc
-__pycache__/hf_asr.cpython-313.pyc
-__pycache__/utils.cpython-313.pyc
-*.csv
+# Python artifacts
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Analysis and data files
+*.csv
 gemini_file_registry.json
-__pycache__/*
+
+# Specialized environments or other folders (optional but good practice)
+.venv/
+env/
+.idea/
+.vscode/
