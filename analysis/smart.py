@@ -83,7 +83,7 @@ def run_smart_analysis(
             # Find items that are STILL problematic AND not verified correct
             problematic_indices = [
                 i for i, r in enumerate(results) 
-                if r['score'] < similarity_threshold 
+                if r is not None and r.get('score', 0) < similarity_threshold 
                 and r.get('verification_status') != 'correct'
             ]
 
@@ -175,7 +175,7 @@ def _smart_recheck_first_pass(
     # Identify start set: only problematic items
     problematic_indices = [
         i for i, r in enumerate(results) 
-        if r['score'] < similarity_threshold 
+        if r is not None and r.get('score', 0) < similarity_threshold 
         and r.get('verification_status') != 'correct'
     ]
     

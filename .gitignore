@@ -11,3 +11,4 @@ __pycache__/utils.cpython-313.pyc
 *.csv
 *.pyc
 gemini_file_registry.json
+__pycache__/*

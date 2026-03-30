@@ -200,7 +200,7 @@ def _run_batch_analysis(
         # Identification logic
         target_indices = [
              i for i, r in enumerate(global_results) 
-             if r['score'] < similarity_threshold 
+             if r is not None and r.get('score', 0) < similarity_threshold 
              and r.get('verification_status') != 'correct'
         ]
         if limit_files > 0:
@@ -317,7 +317,7 @@ def _run_recheck_analysis(
     # Identify problematic records
     target_indices = [
         i for i, r in enumerate(global_results) 
-        if r['score'] < similarity_threshold 
+        if r is not None and r.get('score', 0) < similarity_threshold 
         and r.get('verification_status') != 'correct'
     ]
     
@@ -554,7 +554,23 @@ def _run_hf_fresh_analysis(
         })
     
     total_items = len(all_items)
-    results = [None] * total_items  # Pre-allocate for correct ordering
+    # Pre-allocate with empty records to avoid None items if interrupted
+    results = []
+    for item in all_items:
+        results.append({
+            "id": item["idx"],
+            "path": item["path"],
+            "ref_text": item["ref_text"],
+            "hyp_text": "",
+            "score": 0,
+            "norm_ref": "",
+            "norm_hyp": "",
+            "audio_array": item["audio_data"],
+            "sampling_rate": item["sampling_rate"],
+            "model_used": model_name,
+            "verification_status": "pending",
+            "model_results": {}
+        })
     
     # Process in batches of HF_BATCH_SIZE (100)
     batch_size = HF_BATCH_SIZE
@@ -649,7 +665,7 @@ def _run_hf_recheck_analysis(
     # Identify problematic records
     target_indices = [
         i for i, r in enumerate(global_results) 
-        if r['score'] < similarity_threshold 
+        if r is not None and r.get('score', 0) < similarity_threshold 
         and r.get('verification_status') != 'correct'
     ]
     
