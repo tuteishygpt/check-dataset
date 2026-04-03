@@ -10,6 +10,7 @@ from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator
 from analysis.import_export import save_results_csv
+from gemini_api import is_transcription_error
 
 
 def run_smart_analysis(
@@ -110,6 +111,9 @@ def run_smart_analysis(
                     continue
 
                 hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+                if is_transcription_error(hyp_text):
+                    print(f"⚠️ Прапускаем (памылка распазнавання): {result.get('path')} | {hyp_text}")
+                    continue
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
                 # Save model result
@@ -245,6 +249,9 @@ def _smart_recheck_first_pass(
                  continue
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+        if is_transcription_error(hyp_text):
+            print(f"⚠️ Прапускаем (памылка распазнавання): {result.get('path')} | {hyp_text}")
+            continue
         score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
         print(f"🔄 Smart Updated (Step 1): {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
@@ -357,6 +364,9 @@ def _smart_fresh_first_pass(
                     continue
 
             hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+            if is_transcription_error(hyp_text):
+                print(f"⚠️ Прапускаем (памылка распазнавання): {result.get('path', f'idx={idx}')} | {hyp_text}")
+                continue
             score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
             if 'model_results' not in results[idx]:
@@ -406,6 +416,24 @@ def _smart_fresh_first_pass(
         ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+        if is_transcription_error(hyp_text):
+            print(f"⚠️ Прапускаем (памылка распазнавання): {item['audio']['path']} | {hyp_text}")
+            # Add a pending record so it can be retried later
+            results.append({
+                "id": idx,
+                "path": item['audio']['path'],
+                "ref_text": ref_text,
+                "hyp_text": "",
+                "score": 0,
+                "norm_ref": "",
+                "norm_hyp": "",
+                "audio_array": audio_data,
+                "sampling_rate": sampling_rate,
+                "model_used": model_name,
+                "verification_status": "pending",
+                "model_results": {}
+            })
+            continue
         score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
         results.append({

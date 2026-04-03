@@ -13,7 +13,7 @@ from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
 from ui.dashboard import generate_dashboard_outputs
-from gemini_api import GeminiIntegrator, BatchTask, DEFAULT_TRANSCRIPTION_PROMPT
+from gemini_api import GeminiIntegrator, BatchTask, DEFAULT_TRANSCRIPTION_PROMPT, is_transcription_error
 from hf_asr import is_hf_asr_model, get_hf_asr_client, HF_BATCH_SIZE
 from analysis.import_export import save_results_csv
 
@@ -290,6 +290,12 @@ def _run_batch_analysis(
             idx = task_map_idx[key]
             if idx < len(global_results):
                 ref_text = global_results[idx]['ref_text']
+                
+                # Skip error responses — don't write error codes to text fields
+                if text.startswith("Error:"):
+                    print(f"⚠️ Batch: прапускаем памылку для idx={idx}: {text}")
+                    continue
+
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, text)
                 
                 global_results[idx].update({
@@ -403,6 +409,9 @@ def _run_recheck_analysis(
                 continue
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+        if is_transcription_error(hyp_text):
+            print(f"⚠️ Прапускаем (памылка распазнавання): {result.get('path')} | {hyp_text}")
+            continue
         score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
         print(f"🔄 Updated: {result.get('path')} | Score: {result.get('score')} -> {score} | Text: {hyp_text}")
@@ -517,6 +526,9 @@ def _run_fresh_analysis(
                     continue
 
             hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+            if is_transcription_error(hyp_text):
+                print(f"⚠️ Прапускаем (памылка распазнавання): {result.get('path', f'idx={idx}')} | {hyp_text}")
+                continue
             score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
             if 'model_results' not in results[idx]:
@@ -567,6 +579,24 @@ def _run_fresh_analysis(
         ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
+        if is_transcription_error(hyp_text):
+            print(f"⚠️ Прапускаем (памылка распазнавання): {item['audio']['path']} | {hyp_text}")
+            # Add a pending record so it can be retried later
+            results.append({
+                "id": idx,
+                "path": item['audio']['path'],
+                "ref_text": ref_text,
+                "hyp_text": "",
+                "score": 0,
+                "norm_ref": "",
+                "norm_hyp": "",
+                "audio_array": audio_data,
+                "sampling_rate": sampling_rate,
+                "model_used": model_name,
+                "verification_status": "pending",
+                "model_results": {}
+            })
+            continue
         score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
 
         results.append({
@@ -747,7 +777,9 @@ def _run_hf_fresh_analysis(
                 idx = item["idx"]
                 ref_text = item["ref_text"]
                 hyp_text = transcriptions.get(idx, "")
-                if not hyp_text:
+                if not hyp_text or is_transcription_error(hyp_text):
+                    if is_transcription_error(hyp_text):
+                        print(f"⚠️ HF ASR: прапускаем памылку для idx={idx}: {hyp_text}")
                     continue
                 transcribed_count += 1
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
@@ -857,8 +889,8 @@ def _run_hf_fresh_analysis(
             ref_text = item["ref_text"]
             hyp_text = transcriptions.get(idx, "")
 
-            # Only record result if transcription was successful
-            if hyp_text:
+            # Only record result if transcription was successful (not empty/error)
+            if hyp_text and not is_transcription_error(hyp_text):
                 score, norm_ref, norm_hyp = utils.calculate_similarity(ref_text, hyp_text)
                 transcribed_count += 1
 
@@ -1029,7 +1061,9 @@ def _run_hf_recheck_analysis(
             ref_text = item["ref_text"]
             hyp_text = transcriptions.get(idx, "")
             
-            if not hyp_text:
+            if not hyp_text or is_transcription_error(hyp_text):
+                if is_transcription_error(hyp_text):
+                    print(f"⚠️ HF Recheck: прапускаем памылку для idx={idx}: {hyp_text}")
                 continue
             
             transcribed_count += 1

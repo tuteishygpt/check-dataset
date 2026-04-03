@@ -33,6 +33,17 @@ except ImportError:
 
 REGISTRY_FILE = "gemini_file_registry.json"
 
+
+def is_transcription_error(text: str) -> bool:
+    """Check if the transcription result is an error message rather than real text.
+    
+    Error responses from transcribe_audio start with 'Error:'.
+    """
+    if not text:
+        return False
+    return text.startswith("Error:")
+
+
 DEFAULT_TRANSCRIPTION_PROMPT = """You are a transcription engine.
 Transcribe the following audio verbatim in Belarusian.
 This audio is a fragment of an audiobook and may start or end mid-sentence.
