@@ -24,6 +24,27 @@ class HuggingFaceTokenHandlingTests(unittest.TestCase):
 
         self.assertEqual(load_dataset.call_args.kwargs["token"], None)
 
+    def test_build_hf_space_client_disables_zero_gpu_proxy_when_token_present(self):
+        from hf_asr import build_hf_space_client
+
+        with mock.patch("hf_asr.HFSpaceClient") as client_cls:
+            build_hf_space_client("demo/space", "hf_secret")
+
+        client_cls.assert_called_once_with(
+            "demo/space",
+            token="hf_secret",
+            disable_zero_gpu_proxy=True,
+        )
+
+    def test_hf_space_client_skips_zero_gpu_headers_when_disabled(self):
+        from hf_asr import HFSpaceClient
+
+        client = HFSpaceClient.__new__(HFSpaceClient)
+        client.disable_zero_gpu_proxy = True
+
+        headers = {"authorization": "Bearer hf_secret"}
+        self.assertEqual(client.add_zero_gpu_headers(headers), headers)
+
 
 if __name__ == "__main__":
     unittest.main()

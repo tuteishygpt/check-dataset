@@ -42,7 +42,7 @@ class HuggingFaceASR:
     def _ensure_client(self):
         """Lazily initialize the Gradio client."""
         if self.client is None:
-            self.client = Client(self.space_id, token=self.hf_token)
+            self.client = build_hf_space_client(self.space_id, self.hf_token)
         return self.client
     
     def _reset_client(self):
@@ -222,6 +222,33 @@ def get_hf_asr_client(model_name: str, hf_token: str = None) -> HuggingFaceASR:
     
     model_config = HF_ASR_MODELS[model_name]
     return HuggingFaceASR(model_config["space_id"], hf_token=hf_token)
+
+
+class HFSpaceClient(Client):
+    """Gradio client that can skip user ZeroGPU proxy forwarding."""
+
+    def __init__(self, *args, disable_zero_gpu_proxy: bool = False, **kwargs):
+        self.disable_zero_gpu_proxy = disable_zero_gpu_proxy
+        super().__init__(*args, **kwargs)
+
+    def add_zero_gpu_headers(self, headers: dict[str, str]) -> dict[str, str]:
+        if self.disable_zero_gpu_proxy:
+            return headers
+        return super().add_zero_gpu_headers(headers)
+
+
+def build_hf_space_client(space_id: str, hf_token: str | None):
+    """Build a Gradio client for an HF Space.
+
+    When a server-side HF token is available, prefer it over forwarding the
+    browser/request-scoped ZeroGPU proxy token from the current Gradio context.
+    """
+    normalized_token = normalize_hf_token(hf_token)
+    return HFSpaceClient(
+        space_id,
+        token=normalized_token,
+        disable_zero_gpu_proxy=bool(normalized_token),
+    )
 
 
 def is_hf_asr_model(model_name: str) -> bool:
