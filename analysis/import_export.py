@@ -44,7 +44,7 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             ds = cached_ds
         else:
             print(f"Loading dataset '{dataset_name}' for import...")
-            ds = utils.load_hf_dataset(dataset_name, limit=limit)
+            ds = utils.load_hf_dataset(dataset_name, limit=limit, decode_audio=False)
             cache_dataset(dataset_name, limit, ds)
             
         global_results = get_global_results()
@@ -53,15 +53,14 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
         if not global_results or len(global_results) != len(ds):
             new_results = []
             for idx, item in enumerate(ds):
-                ref_text = item.get('sentence') or item.get('text') or item.get('transcription') or item.get('transcript') or ""
+                ref_text = utils.get_record_text(item)
                 new_results.append({
                     "id": idx,
-                    "path": item['audio']['path'],
+                    "source_idx": idx,
+                    "path": utils.get_audio_path(item),
                     "ref_text": ref_text,
                     "hyp_text": "",
                     "score": 0,
-                    "audio_array": item['audio']['array'],
-                    "sampling_rate": item['audio']['sampling_rate'],
                     "model_used": "",
                     "verification_status": "pending",
                     "model_results": {}
@@ -336,21 +335,20 @@ def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
             for row in verified_data:
                 audio_array = row.get('audio_array')
                 sr = row.get('sampling_rate')
-                
+
                 if audio_array is None or len(audio_array) == 0:
                     if ds_ref is None:
                         try:
                             needed = {r.get('path') for r in verified_data if not r.get('audio_array')}
                             needed.update(os.path.basename(p) for p in needed if p)
-                            items = utils.load_hf_dataset(dataset_name, allowed_paths=needed)
-                            ds_ref = {item['audio']['path']: item for item in items}
+                            items = utils.load_hf_dataset(dataset_name, allowed_paths=needed, decode_audio=False)
+                            ds_ref = {utils.get_audio_path(item): item for item in items}
                             ds_ref.update({os.path.basename(k): v for k, v in ds_ref.items()})
                         except:
                             ds_ref = {}
                     item = ds_ref.get(row.get('path')) or ds_ref.get(os.path.basename(row.get('path', '')))
                     if item:
-                        audio_array = item['audio']['array']
-                        sr = item['audio']['sampling_rate']
+                        audio_array, sr, _ = utils.decode_audio_item(item)
                 
                 if audio_array is not None and len(audio_array) > 0:
                     buffer = io.BytesIO()

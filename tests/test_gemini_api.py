@@ -5,7 +5,12 @@ from gemini_api import (
     DEFAULT_TRANSCRIPTION_PROMPT,
     FLEX_REQUEST_HEADERS,
     GeminiIntegrator,
+    VERTEX_BATCH_SIZE,
     build_generation_config,
+    build_vertex_batch_request,
+    chunk_by_size,
+    extract_text_from_batch_prediction,
+    normalize_batch_job_state,
     supports_flex_inference,
     validate_flex_inference,
     validate_vertex_environment,
@@ -30,6 +35,59 @@ class BuildGenerationConfigTests(unittest.TestCase):
             {"include_thoughts": True, "budget_tokens": 2048},
         )
         self.assertNotIn("service_tier", config)
+
+
+class VertexBatchHelpersTests(unittest.TestCase):
+    def test_chunk_by_size_splits_into_batches_of_100(self):
+        chunks = chunk_by_size(list(range(250)), VERTEX_BATCH_SIZE)
+
+        self.assertEqual(len(chunks), 3)
+        self.assertEqual([len(chunk) for chunk in chunks], [100, 100, 50])
+        self.assertEqual(chunks[0][0], 0)
+        self.assertEqual(chunks[-1][-1], 249)
+
+    def test_build_vertex_batch_request_uses_gcs_audio_uri(self):
+        request = build_vertex_batch_request(
+            audio_gcs_uri="gs://demo-bucket/audio/example.wav",
+            mime_type="audio/wav",
+            prompt=DEFAULT_TRANSCRIPTION_PROMPT,
+            generation_config={"temperature": 0.3},
+        )
+
+        self.assertEqual(request["request"]["contents"][0]["parts"][0]["text"], DEFAULT_TRANSCRIPTION_PROMPT)
+        self.assertEqual(
+            request["request"]["contents"][0]["parts"][1],
+            {
+                "fileData": {
+                    "fileUri": "gs://demo-bucket/audio/example.wav",
+                    "mimeType": "audio/wav",
+                }
+            },
+        )
+        self.assertEqual(request["request"]["generationConfig"], {"temperature": 0.3})
+
+    def test_extract_text_from_batch_prediction_reads_candidate_text(self):
+        prediction = {
+            "response": {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"text": " transcript from batch "}
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+
+        self.assertEqual(extract_text_from_batch_prediction(prediction), "transcript from batch")
+
+    def test_normalize_batch_job_state_handles_enum_like_values(self):
+        fake_state = mock.Mock()
+        fake_state.value = "JOB_STATE_SUCCEEDED"
+
+        self.assertEqual(normalize_batch_job_state(fake_state), "JOB_STATE_SUCCEEDED")
 
 
 class VertexEnvironmentTests(unittest.TestCase):

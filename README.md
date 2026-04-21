@@ -9,11 +9,17 @@ gcloud auth application-default login
 export GOOGLE_GENAI_USE_VERTEXAI=true
 export GOOGLE_CLOUD_PROJECT=your-project-id
 export GOOGLE_CLOUD_LOCATION=global
+export VERTEX_BATCH_GCS_URI=gs://your-bucket/tts-validator
 ```
 
 `Flex PayGo` on Vertex AI uses HTTP headers, works only on the `global`
 endpoint, and is currently limited to Gemini 3 preview models. This project
 uses the documented header-based flow instead of `service_tier=flex`.
+
+`Batch Mode` uses the real Vertex Batch API with JSONL requests in Cloud
+Storage. The app uploads audio as WAV files to `VERTEX_BATCH_GCS_URI`, creates
+all required batch jobs immediately in groups of 100 files, waits for
+completion, and merges the output back into the normal analysis results.
 
 Інструмент для аналізу аўдыядатасетаў з мэтай выяўлення несупадзенняў паміж метаданымі (тэкстам) і рэальным гукам. Выкарыстоўвае Gemini праз Vertex AI для транскрыбацыі аўдыя.
 
@@ -113,6 +119,7 @@ GOOGLE_GENAI_USE_VERTEXAI=true
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=global
 GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account.json
+VERTEX_BATCH_GCS_URI=gs://your-bucket/tts-validator
 # Flex PayGo on Vertex AI requires `global` and supported Gemini 3 preview models.
 ```
 

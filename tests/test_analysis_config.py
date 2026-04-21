@@ -1,10 +1,25 @@
 import unittest
 
 from analysis.smart import build_smart_generation_config
-from analysis.standard import build_model_generation_config
+from analysis.standard import build_model_generation_config, normalize_execution_mode
 
 
 class AnalysisConfigTests(unittest.TestCase):
+    def test_normalize_execution_mode_defaults_to_direct(self):
+        self.assertEqual(normalize_execution_mode(None), "direct")
+
+    def test_normalize_execution_mode_preserves_supported_modes(self):
+        self.assertEqual(normalize_execution_mode("direct"), "direct")
+        self.assertEqual(normalize_execution_mode("flex"), "flex")
+        self.assertEqual(normalize_execution_mode("batch"), "batch")
+
+    def test_normalize_execution_mode_uses_legacy_flex_flag(self):
+        self.assertEqual(normalize_execution_mode(None, flex_mode=True), "flex")
+
+    def test_normalize_execution_mode_rejects_unknown_values(self):
+        with self.assertRaises(ValueError):
+            normalize_execution_mode("turbo")
+
     def test_standard_model_config_rejects_unsupported_flex_model(self):
         with self.assertRaises(ValueError):
             build_model_generation_config(

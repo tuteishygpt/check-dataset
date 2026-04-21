@@ -4,6 +4,7 @@ import time
 import tempfile
 import soundfile as sf
 from gradio_client import Client, handle_file
+from hf_auth import normalize_hf_token
 
 
 # Batch size for HF ASR processing
@@ -35,7 +36,7 @@ class HuggingFaceASR:
             hf_token: Optional Hugging Face Token for private spaces or priority access.
         """
         self.space_id = space_id
-        self.hf_token = hf_token
+        self.hf_token = normalize_hf_token(hf_token)
         self.client = None
     
     def _ensure_client(self):
