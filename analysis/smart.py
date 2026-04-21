@@ -1,25 +1,50 @@
 """Smart analysis - multi-model iterative processing."""
 import os
 import gradio as gr
-from google import genai
 
 import utils
 from core.state import get_global_results, set_global_results
 from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
-from gemini_api import GeminiIntegrator
+from gemini_api import GeminiIntegrator, build_generation_config, validate_flex_inference
 from analysis.import_export import save_results_csv
 from gemini_api import is_transcription_error
 
+STANDARD_SMART_MODELS = [
+    ("gemini-2.5-flash-lite", "Step 1/4: Flash-Lite"),
+    ("gemini-3.1-flash-lite-preview", "Step 2/4: Flash-Lite 3.1"),
+    ("gemini-2.5-flash", "Step 3/4: Flash"),
+    ("gemini-2.5-pro", "Step 4/4: Gemini-2.5-Pro"),
+]
+FLEX_SMART_MODELS = [
+    ("gemini-3.1-flash-lite-preview", "Step 1/3: Gemini-3.1 Flash-Lite Preview"),
+    ("gemini-3-flash-preview", "Step 2/3: Gemini-3 Flash Preview"),
+    ("gemini-3.1-pro-preview", "Step 3/3: Gemini-3.1 Pro Preview"),
+]
+
+
+def get_smart_models(flex_mode: bool):
+    """Return the model chain for smart analysis."""
+    return FLEX_SMART_MODELS if flex_mode else STANDARD_SMART_MODELS
+
+
+def build_smart_generation_config(temperature: float, flex_mode: bool, location: str):
+    """Build config for smart analysis passes."""
+    if flex_mode:
+        for model_name, _ in get_smart_models(flex_mode=True):
+            validate_flex_inference(model_name, location=location)
+
+    return build_generation_config(temperature=temperature, thinking_budget=0, flex_mode=flex_mode)
+
 
 def run_smart_analysis(
-    api_key: str,
     dataset_name: str,
     limit_files: int,
     temperature: float,
     thinking_budget: int,
     similarity_threshold: int,
+    flex_mode: bool = False,
     recheck_problematic: bool = False,
     hf_token: str = None,
     progress=gr.Progress()
@@ -35,21 +60,15 @@ def run_smart_analysis(
     similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
     temperature = float(temperature)
 
-    if not api_key:
-        raise gr.Error("Калі ласка, увядзіце Gemini API ключ.")
-
-    models = [
-        ("gemini-2.5-flash-lite", "Этап 1/4: Flash-Lite (першы праход)"),
-        ("gemini-3.1-flash-lite-preview", "Этап 2/4: Flash-Lite 3.1 (другі праход)"),
-        ("gemini-2.5-flash", "Этап 3/4: Flash"),
-        ("gemini-2.5-pro", "Этап 4/4: Gemini-2.5-Pro"),
-    ]
+    models = get_smart_models(flex_mode=flex_mode)
 
     try:
-        gemini_tool = GeminiIntegrator(api_key=api_key)
-
-        config_args = {"temperature": temperature}
-        gen_config = genai.types.GenerateContentConfig(**config_args)
+        gemini_tool = GeminiIntegrator()
+        gen_config = build_smart_generation_config(
+            temperature=temperature,
+            flex_mode=flex_mode,
+            location=gemini_tool.location,
+        )
 
         results = []
         
@@ -464,3 +483,4 @@ def _smart_fresh_first_pass(
             save_results_csv(dataset_name, auto_prefix=False)
 
     return results
+

@@ -4,7 +4,6 @@ import io
 import time
 import random
 from rapidfuzz import fuzz
-from google import genai
 from datasets import load_dataset, Audio
 import soundfile as sf
 import numpy as np

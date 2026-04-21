@@ -160,29 +160,6 @@ head_js = """
     }
   };
 
-  // localStorage API key persistence
-  function setupApiKeySaver() {
-    const el = getValueEl("api_key_input");
-    if (!el) return false;
-
-    const saved = localStorage.getItem("gemini_api_key");
-    if (saved && !el.value) {
-      el.value = saved;
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-
-    if (!el.__geminiSaverAttached) {
-      el.addEventListener("blur", function () {
-        if (this.value && this.value.length > 10) {
-          localStorage.setItem("gemini_api_key", this.value);
-        }
-      });
-      el.__geminiSaverAttached = true;
-    }
-    return true;
-  }
-
   // localStorage HF Token persistence
   function setupHfTokenSaver() {
     const el = getValueEl("hf_token_input");
@@ -210,9 +187,8 @@ head_js = """
   let tries = 0;
   const timer = setInterval(() => {
     tries += 1;
-    const ok = setupApiKeySaver();
-    const ok2 = setupHfTokenSaver();
-    if ((ok && ok2) || tries >= 40) clearInterval(timer);
+    const ok = setupHfTokenSaver();
+    if (ok || tries >= 40) clearInterval(timer);
   }, 250);
 
 })();

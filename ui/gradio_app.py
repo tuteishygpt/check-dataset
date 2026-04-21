@@ -1,11 +1,8 @@
 """Gradio interface for TTS Dataset Validator."""
-import os
 import gradio as gr
 
-from core.state import get_global_results, clear_dataset_cache, get_dataset_cache
+from core.state import clear_dataset_cache, get_dataset_cache
 from ui.styles import custom_css, head_js
-from ui.dashboard import generate_dashboard_outputs
-from ui.audio import get_audio_for_row
 from analysis.standard import run_analysis
 from analysis.smart import run_smart_analysis
 from analysis.import_export import (
@@ -50,14 +47,7 @@ def create_interface():
             # Left column - Settings
             with gr.Column(scale=1, elem_classes=["settings-panel"]):
                 gr.Markdown("### ⚙️ Налады")
-
-                api_key = gr.Textbox(
-                    label="Gemini API Key",
-                    type="password",
-                    value=os.getenv("GOOGLE_API_KEY", ""),
-                    placeholder="Увядзіце ваш API ключ...",
-                    elem_id="api_key_input"
-                )
+                gr.Markdown("Vertex AI auth uses ADC from `gcloud auth application-default login` plus `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`.")
 
                 hf_token = gr.Textbox(
                     label="Hugging Face Token",
@@ -132,11 +122,11 @@ def create_interface():
                     value=False,
                     info="Калі ўключана, аналіз будзе запускацца толькі для файлаў з нізкім рэйтынгам."
                 )
-
-                batch_mode = gr.Checkbox(
-                    label="Пакетная апрацоўка (Batch Mode)",
+                flex_mode = gr.Checkbox(
+                    label="Flex PayGo",
                     value=False,
-                    info="Калі ўключана, выкарыстоўвае Gemini Batch API (танней, але павольней)."
+                    interactive=True,
+                    info="Vertex preview mode: global endpoint only, supported on Gemini 3.x preview models."
                 )
 
                 stop_btn = gr.Button(
@@ -148,7 +138,7 @@ def create_interface():
 
                 gr.HTML(
                     "<small style='color: #94a3b8;'>🧠 Разумны аналіз выкарыстоўвае 3 мадэлі паслядоўна: "
-                    "Flash-Lite → Flash → Gemini-3-Flash</small>",
+                    "Flash-Lite → Flash → Gemini-3-Flash. Flex PayGo uses the Gemini 3 preview chain on `global`.</small>",
                     sanitize=False
                 )
 
@@ -197,7 +187,7 @@ def create_interface():
 
         analyze_event = analyze_btn.click(
             fn=run_analysis,
-            inputs=[api_key, dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold, batch_mode, recheck_problematic, hf_token],
+            inputs=[dataset_name, model_name, limit_files, temperature, thinking_budget, similarity_threshold, flex_mode, recheck_problematic, hf_token],
             outputs=[stats_output, flagged_output, results_table]
         )
         
@@ -209,7 +199,7 @@ def create_interface():
 
         smart_analyze_event = smart_analyze_btn.click(
             fn=run_smart_analysis,
-            inputs=[api_key, dataset_name, limit_files, temperature, thinking_budget, similarity_threshold, recheck_problematic, hf_token],
+            inputs=[dataset_name, limit_files, temperature, thinking_budget, similarity_threshold, flex_mode, recheck_problematic, hf_token],
             outputs=[stats_output, flagged_output, results_table]
         )
         
@@ -258,3 +248,5 @@ def create_interface():
         )
 
     return demo
+
+

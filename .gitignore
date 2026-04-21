@@ -11,5 +11,7 @@ gemini_file_registry.json
 # Specialized environments or other folders (optional but good practice)
 .venv/
 env/
+.env
+canvas-genius-492412-c3-53a1b90ffc0d.json
 .idea/
 .vscode/

@@ -1,6 +1,6 @@
 datasets
 huggingface-hub
-google-genai
+google-genai>=1.73.1
 rapidfuzz
 python-dotenv
 gradio

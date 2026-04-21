@@ -1,13 +1,28 @@
 #  TTS Dataset Validator
 
-Інструмент для аналізу аўдыядатасетаў з мэтай выяўлення несупадзенняў паміж метаданымі (тэкстам) і рэальным гукам. Выкарыстоўвае Google Gemini API для транскрыбацыі аўдыя.
+## Vertex AI setup
+
+This project now uses Gemini through Vertex AI with Application Default Credentials instead of `GOOGLE_API_KEY`.
+
+```bash
+gcloud auth application-default login
+export GOOGLE_GENAI_USE_VERTEXAI=true
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export GOOGLE_CLOUD_LOCATION=global
+```
+
+`Flex PayGo` on Vertex AI uses HTTP headers, works only on the `global`
+endpoint, and is currently limited to Gemini 3 preview models. This project
+uses the documented header-based flow instead of `service_tier=flex`.
+
+Інструмент для аналізу аўдыядатасетаў з мэтай выяўлення несупадзенняў паміж метаданымі (тэкстам) і рэальным гукам. Выкарыстоўвае Gemini праз Vertex AI для транскрыбацыі аўдыя.
 
 ## ✨ Магчымасці
 
 - 🎤 **Транскрыбацыя аўдыя** з дапамогай Gemini API
 - 📊 **Параўнанне вынікаў** розных мадэлей
 - 🧠 **Разумны аналіз** з паслядоўным выкарыстаннем некалькіх мадэлей
-- 📦 **Пакетная апрацоўка** (Batch API) для эканоміі сродкаў
+- 📦 **Vertex AI сінхронны рэжым** з inline-аўдыя без upload/batch API
 - 📥 **Імпарт/экспарт** вынікаў у CSV
 - 🤗 **Стварэнне датасэтаў** на Hugging Face з правераных запісаў
 - ✅ **Ручная верыфікацыя** праблемных запісаў
@@ -38,7 +53,7 @@ check dataset/
 │
 ├── analysis/                 # Аналітычныя модулі
 │   ├── __init__.py
-│   ├── standard.py           # Стандартны аналіз (sync + batch mode)
+│   ├── standard.py           # Стандартны аналіз праз Vertex AI
 │   ├── smart.py              # Разумны аналіз (мульці-мадэльны)
 │   └── import_export.py      # Імпарт/экспарт CSV, стварэнне датасэтаў
 │
@@ -68,7 +83,7 @@ check dataset/
 
 | Файл | Апісанне |
 |------|----------|
-| `standard.py` | `run_analysis()` - стандартны аналіз з падтрымкай batch mode і пераправеркі праблемных файлаў |
+| `standard.py` | `run_analysis()` - стандартны аналіз праз Vertex AI і пераправерка праблемных файлаў |
 | `smart.py` | `run_smart_analysis()` - разумны аналіз з паслядоўным выкарыстаннем 4 мадэлей (Flash-Lite → Flash → Gemini-3-Flash) |
 | `import_export.py` | Імпарт CSV, экспарт вынікаў, верыфікацыя запісаў, стварэнне датасэтаў на HuggingFace |
 
@@ -86,7 +101,7 @@ check dataset/
 | Файл | Апісанне |
 |------|----------|
 | `app.py` | Entry point - загружае .env і запускае Gradio |
-| `gemini_api.py` | `GeminiIntegrator` - клас для працы з Gemini API (sync + batch) |
+| `gemini_api.py` | `GeminiIntegrator` - клас для Vertex AI Gemini з inline WAV-аўдыя |
 | `utils.py` | Загрузка датасетаў з HuggingFace, нармалізацыя тэксту, вылічэнне падабенства |
 
 ## ⚙️ Канфігурацыя
@@ -94,14 +109,18 @@ check dataset/
 Стварыце файл `.env` у каранёвай тэчцы:
 
 ```env
-GOOGLE_API_KEY=your_gemini_api_key_here
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=global
+GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account.json
+# Flex PayGo on Vertex AI requires `global` and supported Gemini 3 preview models.
 ```
 
-Альтэрнатыўна, API ключ можна ўвесці непасрэдна ў інтэрфейсе.
+Аўтэнтыфікацыя ідзе праз Vertex AI ADC, API key больш не выкарыстоўваецца.
 
 ## 📊 Працоўны працэс
 
-1. **Увядзіце API ключ** Gemini і імя датасету HuggingFace
+1. **Наладзьце Vertex AI ADC** і імя датасету HuggingFace
 2. **Выберыце мадэль** і ўсталюйце параметры (ліміт файлаў, парог)
 3. **Запусціце аналіз** (звычайны або разумны)
 4. **Праглядзіце вынікі** - праблемныя файлы будуць пазначаны
