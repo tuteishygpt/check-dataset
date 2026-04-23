@@ -311,9 +311,61 @@ def verify_action(data_str, similarity_threshold, dataset_name):
         return generate_dashboard_outputs(similarity_threshold)
 
 
+def _has_audio_data(audio_array) -> bool:
+    if audio_array is None:
+        return False
+    if hasattr(audio_array, "__len__") and len(audio_array) == 0:
+        return False
+    return True
+
+
+def _load_verified_source_dataset(dataset_name, verified_data, hf_token):
+    limit = utils.infer_result_dataset_limit(verified_data)
+    return utils.load_hf_dataset(
+        dataset_name,
+        limit=limit,
+        hf_token=hf_token,
+        decode_audio=False,
+    )
+
+
+def _verified_record_unique_key(record):
+    source_idx = record.get("source_idx")
+    if source_idx is not None:
+        try:
+            return ("source_idx", int(source_idx))
+        except (TypeError, ValueError):
+            pass
+
+    path = record.get("path") or ""
+    if path:
+        return ("path", os.path.basename(str(path)).lower())
+
+    record_id = record.get("id")
+    if record_id is not None:
+        return ("id", str(record_id))
+
+    return ("object", id(record))
+
+
+def _dedupe_verified_records(records):
+    unique_records = []
+    seen = set()
+
+    for record in records:
+        key = _verified_record_unique_key(record)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_records.append(record)
+
+    return unique_records, len(records) - len(unique_records)
+
+
 def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
     """Create a new dataset on HuggingFace with only verified records."""
     global_results = get_global_results()
+    duplicate_count = 0
     
     if not hf_token:
         raise gr.Error("Калі ласка, увядзіце Hugging Face Token.")
@@ -324,49 +376,73 @@ def create_verified_dataset(hf_token, dataset_name, progress=gr.Progress()):
     if not verified_data:
         raise gr.Error("Няма правераных (correct) запісаў.")
 
+    verified_data, duplicate_count = _dedupe_verified_records(verified_data)
+
     try:
         login(token=hf_token)
         api = HfApi(token=hf_token)
         username = api.whoami()['name']
         original_slug = dataset_name.split("/")[-1] if "/" in dataset_name else dataset_name
         new_repo_id = f"{username}/{original_slug}Checked"
+        expected_count = len(verified_data)
         
         def gen():
             ds_ref = None
+            path_index = None
+            missing_audio = []
+
             for row in verified_data:
                 audio_array = row.get('audio_array')
                 sr = row.get('sampling_rate')
 
-                if audio_array is None or len(audio_array) == 0:
+                if not _has_audio_data(audio_array):
                     if ds_ref is None:
                         try:
-                            needed = {r.get('path') for r in verified_data if not r.get('audio_array')}
-                            needed.update(os.path.basename(p) for p in needed if p)
-                            items = utils.load_hf_dataset(dataset_name, allowed_paths=needed, decode_audio=False)
-                            ds_ref = {utils.get_audio_path(item): item for item in items}
-                            ds_ref.update({os.path.basename(k): v for k, v in ds_ref.items()})
-                        except:
-                            ds_ref = {}
-                    item = ds_ref.get(row.get('path')) or ds_ref.get(os.path.basename(row.get('path', '')))
+                            ds_ref = _load_verified_source_dataset(dataset_name, verified_data, hf_token)
+                            path_index = utils.build_dataset_path_index(ds_ref)
+                        except Exception as e:
+                            raise RuntimeError(f"Could not load source dataset audio: {e}") from e
+
+                    item = utils.get_dataset_item(ds_ref, row, path_index=path_index)
                     if item:
                         audio_array, sr, _ = utils.decode_audio_item(item)
                 
-                if audio_array is not None and len(audio_array) > 0:
+                if _has_audio_data(audio_array):
                     buffer = io.BytesIO()
                     sf.write(buffer, audio_array, int(float(sr or 16000)), format='WAV')
                     yield {"audio": {"bytes": buffer.getvalue(), "path": None}, "text": row.get('ref_text', ''), "original_path": row.get('path', '')}
+                else:
+                    missing_audio.append(row.get("path") or row.get("id") or "<unknown>")
+
+            if missing_audio:
+                examples = ", ".join(str(item) for item in missing_audio[:5])
+                raise RuntimeError(
+                    f"Missing audio for {len(missing_audio)} of {expected_count} verified records. "
+                    f"First missing records: {examples}. Make sure Hugging Face Dataset points "
+                    "to the original dataset, not the Checked export."
+                )
         
         features = Features({"audio": {"bytes": Value("binary"), "path": Value("string")}, "text": Value("string"), "original_path": Value("string")})
         new_ds = Dataset.from_generator(gen, features=features)
         if "audio" in new_ds.features:
             new_ds.info.features["audio"] = Audio(sampling_rate=None)
+        if len(new_ds) != expected_count:
+            raise gr.Error(
+                f"Incomplete export: built {len(new_ds)} of {expected_count} verified records. "
+                "Upload stopped."
+            )
         
         if len(new_ds) == 0:
             raise gr.Error("Не ўдалося сабраць аўдыяданыя.")
 
         progress(0.9, desc=f"Загрузка на Hugging Face...")
         new_ds.push_to_hub(new_repo_id, token=hf_token)
+        if duplicate_count:
+            print(f"Verified dataset export skipped {duplicate_count} duplicate record(s).")
         
-        return f"✅ Датасэт створаны: https://huggingface.co/datasets/{new_repo_id}"
+        duplicate_note = ""
+        if duplicate_count:
+            duplicate_note = f" ({len(new_ds)} unique records, {duplicate_count} duplicate skipped)"
+        return f"✅ Датасэт створаны: https://huggingface.co/datasets/{new_repo_id}{duplicate_note}"
     except Exception as e:
         raise gr.Error(f"Памылка: {e}")

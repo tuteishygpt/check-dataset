@@ -35,11 +35,19 @@ def update_thinking_visibility(model_name: str):
 
 def update_model_controls(model_name: str, execution_mode: str):
     """Update thinking visibility and supported execution modes for the model."""
-    supports_batch = is_hf_asr_model(model_name) or supports_batch_inference(model_name)
-    resolved_mode = execution_mode
     if is_hf_asr_model(model_name):
-        resolved_mode = execution_mode or "direct"
-    elif resolved_mode == "batch" and not supports_batch:
+        return (
+            update_thinking_visibility(model_name),
+            gr.update(
+                choices=[("Direct Request", "direct")],
+                value="direct",
+                visible=False,
+            ),
+        )
+
+    supports_batch = supports_batch_inference(model_name)
+    resolved_mode = execution_mode
+    if resolved_mode == "batch" and not supports_batch:
         resolved_mode = "direct"
 
     return (
@@ -47,6 +55,7 @@ def update_model_controls(model_name: str, execution_mode: str):
         gr.update(
             choices=BATCH_CHOICES if supports_batch else DIRECT_AND_FLEX_CHOICES,
             value=resolved_mode,
+            visible=True,
         ),
     )
 

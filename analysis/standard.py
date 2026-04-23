@@ -114,9 +114,6 @@ def get_analysis_target_indices(
 
 def resolve_execution_mode(model_name: str, execution_mode: str) -> str:
     """Downgrade unsupported execution modes to a safe default."""
-    if is_hf_asr_model(model_name):
-        return "direct"
-
     if execution_mode == "batch" and not supports_batch_inference(model_name):
         print(
             "Batch mode is unsupported for model "
@@ -124,6 +121,11 @@ def resolve_execution_mode(model_name: str, execution_mode: str) -> str:
         )
         return "direct"
     return execution_mode
+
+
+def is_gemini_model(model_name: str) -> bool:
+    """Return whether the recognition model should run through Vertex Gemini."""
+    return bool(model_name) and model_name.startswith("gemini-")
 
 
 def _load_analysis_dataset(dataset_name: str, limit: int, hf_token: str, progress, *, initial_progress: float = 0.0):
@@ -152,6 +154,15 @@ def _get_result_audio(ds, result, path_index=None):
     return audio_data, sampling_rate
 
 
+def _has_audio_data(audio_data) -> bool:
+    """Return whether a cached result contains usable audio data."""
+    if audio_data is None:
+        return False
+    if hasattr(audio_data, "__len__") and len(audio_data) == 0:
+        return False
+    return True
+
+
 def run_analysis(
     dataset_name: str,
     model_name: str,
@@ -171,8 +182,6 @@ def run_analysis(
     set_stop_requested(False)
     set_analysis_running(True)
 
-    execution_mode = normalize_execution_mode(execution_mode, flex_mode=flex_mode)
-    execution_mode = resolve_execution_mode(model_name, execution_mode)
     analysis_scope = normalize_analysis_scope(
         analysis_scope,
         recheck_problematic=recheck_problematic,
@@ -186,8 +195,6 @@ def run_analysis(
         global_results = get_global_results()
 
         if is_hf_asr_model(model_name):
-            if execution_mode == "batch":
-                raise gr.Error("Vertex Batch mode is available only for Gemini models on Vertex AI.")
             outputs = _run_hf_asr_analysis(
                 model_name,
                 dataset_name,
@@ -200,6 +207,14 @@ def run_analysis(
             save_results_csv(dataset_name, auto_prefix=True)
             return outputs
 
+        if not is_gemini_model(model_name):
+            raise gr.Error(
+                "Unsupported recognition model. Choose a Gemini model or SeamlessM4T-v2 (HF)."
+            )
+
+        execution_mode = normalize_execution_mode(execution_mode, flex_mode=flex_mode)
+        execution_mode = resolve_execution_mode(model_name, execution_mode)
+
         gemini_tool = GeminiIntegrator()
         gen_config = build_model_generation_config(
             model_name=model_name,
@@ -210,47 +225,18 @@ def run_analysis(
         )
 
         if execution_mode == "batch":
-            if analysis_scope in {ANALYSIS_SCOPE_ALL, ANALYSIS_SCOPE_PENDING}:
-                validate_batch_inference(model_name)
-                outputs = _run_vertex_batch_analysis(
-                    gemini_tool,
-                    model_name,
-                    dataset_name,
-                    limit_files,
-                    similarity_threshold,
-                    gen_config,
-                    hf_token,
-                    progress,
-                )
-            else:
-                gr.Warning(
-                    "Vertex Batch mode currently applies only to the 'Усе' and 'Неапрацаваныя' scopes; "
-                    "the selected scope will use direct requests."
-                )
-                if analysis_scope == ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC and not global_results:
-                    outputs = _run_fresh_analysis(
-                        gemini_tool,
-                        model_name,
-                        dataset_name,
-                        limit_files,
-                        analysis_scope,
-                        similarity_threshold,
-                        gen_config,
-                        hf_token,
-                        progress,
-                    )
-                else:
-                    outputs = _run_recheck_analysis(
-                        gemini_tool,
-                        model_name,
-                        dataset_name,
-                        limit_files,
-                        analysis_scope,
-                        similarity_threshold,
-                        gen_config,
-                        hf_token,
-                        progress,
-                    )
+            validate_batch_inference(model_name)
+            outputs = _run_vertex_batch_analysis(
+                gemini_tool,
+                model_name,
+                dataset_name,
+                limit_files,
+                similarity_threshold,
+                gen_config,
+                hf_token,
+                progress,
+                analysis_scope=analysis_scope,
+            )
         elif analysis_scope == ANALYSIS_SCOPE_ALL or (
             analysis_scope in {ANALYSIS_SCOPE_PENDING, ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC}
             and not global_results
@@ -297,39 +283,40 @@ def _run_vertex_batch_analysis(
     gen_config,
     hf_token,
     progress,
+    analysis_scope=ANALYSIS_SCOPE_ALL,
 ):
     """Run fresh analysis through Vertex Batch API with GCS staging."""
     global_results = get_global_results()
-    pending_indices = [
-        i for i, result in enumerate(global_results)
-        if result is not None and result.get("verification_status") == "pending"
-    ]
+    target_indices = []
+    if global_results:
+        if analysis_scope == ANALYSIS_SCOPE_ALL:
+            target_indices = [
+                i for i, result in enumerate(global_results)
+                if result is not None and result.get("verification_status") == "pending"
+            ]
+        else:
+            target_indices = get_analysis_target_indices(
+                global_results,
+                analysis_scope,
+                similarity_threshold,
+                limit_files=limit_files,
+            )
 
-    if pending_indices:
+    if target_indices:
         limit = None
         ds = _load_analysis_dataset(dataset_name, limit, hf_token, progress, initial_progress=0.0)
-        audio_map = {}
-        for item in ds:
-            path = item["audio"]["path"]
-            if path:
-                audio_map[path] = item
-                audio_map[os.path.basename(path)] = item
-
-        if limit_files > 0:
-            pending_indices = pending_indices[:limit_files]
+        path_index = utils.build_dataset_path_index(ds)
 
         results = global_results
         batch_records = []
-        for idx in pending_indices:
+        for idx in target_indices:
             result = results[idx]
             audio_data = result.get("audio_array")
             sampling_rate = result.get("sampling_rate")
-            if audio_data is None or (hasattr(audio_data, "__len__") and len(audio_data) == 0):
-                path = result.get("path", "")
-                item = audio_map.get(path) or audio_map.get(os.path.basename(path))
-                if item is None:
+            if not _has_audio_data(audio_data):
+                audio_data, sampling_rate = _get_result_audio(ds, result, path_index=path_index)
+                if not _has_audio_data(audio_data):
                     continue
-                audio_data, sampling_rate, _ = utils.decode_audio_item(item)
                 results[idx]["audio_array"] = audio_data
                 results[idx]["sampling_rate"] = sampling_rate
 
@@ -340,8 +327,12 @@ def _run_vertex_batch_analysis(
                     "ref_text": result.get("ref_text", ""),
                     "audio_array": audio_data,
                     "sampling_rate": sampling_rate,
+                    "existing_result": True,
                 }
             )
+    elif global_results and analysis_scope != ANALYSIS_SCOPE_ALL:
+        results = global_results
+        batch_records = []
     else:
         limit = int(limit_files) if limit_files > 0 else None
         ds = _load_analysis_dataset(dataset_name, limit, hf_token, progress, initial_progress=0.0)
@@ -400,6 +391,8 @@ def _run_vertex_batch_analysis(
         progress(0.1 + (position + 1) / total_records * 0.9, desc=f"Vertex Batch: result {position + 1}/{len(batch_records)}")
 
         if is_transcription_error(hyp_text):
+            if record.get("existing_result"):
+                continue
             results[idx].update({
                 "hyp_text": "",
                 "score": 0,
@@ -411,6 +404,32 @@ def _run_vertex_batch_analysis(
             continue
 
         score, norm_ref, norm_hyp = utils.calculate_similarity(record["ref_text"], hyp_text)
+        model_result = {
+            "hyp_text": hyp_text,
+            "score": score,
+            "norm_ref": norm_ref,
+            "norm_hyp": norm_hyp,
+        }
+        if record.get("existing_result"):
+            if "model_results" not in results[idx] or not isinstance(results[idx]["model_results"], dict):
+                results[idx]["model_results"] = {}
+            results[idx]["model_results"][model_name] = model_result
+            best_model, best_result = select_best_model_result(
+                results[idx]["model_results"],
+                similarity_threshold,
+            )
+            if not best_result:
+                continue
+            results[idx].update({
+                "hyp_text": best_result["hyp_text"],
+                "score": best_result["score"],
+                "norm_ref": best_result["norm_ref"],
+                "norm_hyp": best_result["norm_hyp"],
+                "model_used": best_model,
+                "verification_status": "correct" if best_result["score"] >= similarity_threshold else "incorrect",
+            })
+            continue
+
         results[idx].update({
             "hyp_text": hyp_text,
             "score": score,
@@ -419,12 +438,7 @@ def _run_vertex_batch_analysis(
             "model_used": model_name,
             "verification_status": "correct" if score >= similarity_threshold else "incorrect",
             "model_results": {
-                model_name: {
-                    "hyp_text": hyp_text,
-                    "score": score,
-                    "norm_ref": norm_ref,
-                    "norm_hyp": norm_hyp,
-                }
+                model_name: model_result
             },
         })
 
@@ -471,14 +485,7 @@ def _run_recheck_analysis(
         cache_dataset(dataset_name, limit, ds)
         progress(0.05, desc=f"Датасет закэшаваны")
     
-    # Build audio map by filename
-    audio_map = {}
-    for item in ds:
-        path = item['audio']['path']
-        if path:
-            fname = os.path.basename(path)
-            audio_map[fname] = item
-            audio_map[path] = item
+    path_index = utils.build_dataset_path_index(ds)
 
     progress(0.1, desc=f"Пераправерка {len(target_indices)} файлаў...")
     
@@ -495,28 +502,13 @@ def _run_recheck_analysis(
         ref_text = result.get('ref_text', "")
         
         # If audio is missing, try to fetch from dataset
-        if audio_data is None or len(audio_data) == 0:
-            path = result.get('path', '')
-            item = audio_map.get(path) or audio_map.get(os.path.basename(path))
-            
-            # Fallback: try to find by ID if path lookup failed
-            if not item:
-                rec_id = result.get('id')
-                if rec_id is not None:
-                    try:
-                        rec_id = int(rec_id)
-                        if 0 <= rec_id < len(ds):
-                            item = ds[rec_id]
-                    except:
-                        pass
-
-            if item:
-                audio_data = item['audio']['array']
-                sampling_rate = item['audio']['sampling_rate']
+        if not _has_audio_data(audio_data):
+            audio_data, sampling_rate = _get_result_audio(ds, result, path_index=path_index)
+            if _has_audio_data(audio_data):
                 global_results[idx]['audio_array'] = audio_data
                 global_results[idx]['sampling_rate'] = sampling_rate
             else:
-                print(f"Problematic Recheck: Skipping index {idx}, path '{path}', id {result.get('id')}: Audio not found in dataset.")
+                print(f"Problematic Recheck: Skipping index {idx}, path '{result.get('path', '')}', id {result.get('id')}: Audio not found in dataset.")
                 continue
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
@@ -563,8 +555,8 @@ def _run_recheck_analysis(
 
 def _run_fresh_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    analysis_scope, similarity_threshold, gen_config,
-    hf_token, progress
+    analysis_scope=ANALYSIS_SCOPE_ALL, similarity_threshold=None, gen_config=None,
+    hf_token=None, progress=None
 ):
     """Run fresh analysis, resuming from pending files if they exist."""
     global_results = get_global_results()
@@ -611,21 +603,11 @@ def _run_fresh_analysis(
             ref_text = result.get('ref_text', "")
 
             # Fetch audio from dataset if missing
-            if audio_data is None or (hasattr(audio_data, '__len__') and len(audio_data) == 0):
-                path = result.get('path', '')
-                item = audio_map.get(path) or audio_map.get(os.path.basename(path))
-                if not item:
-                    rec_id = result.get('id')
-                    if rec_id is not None:
-                        try:
-                            rec_id = int(rec_id)
-                            if 0 <= rec_id < len(ds):
-                                item = ds[rec_id]
-                        except:
-                            pass
-                if item:
-                    audio_data = item['audio']['array']
-                    sampling_rate = item['audio']['sampling_rate']
+            if not _has_audio_data(audio_data):
+                audio_data, sampling_rate = _get_result_audio(ds, result, path_index=path_index)
+                if _has_audio_data(audio_data):
+                    results[idx]['audio_array'] = audio_data
+                    results[idx]['sampling_rate'] = sampling_rate
                 else:
                     print(f"Fresh Resume: Skipping index {idx}, audio not found.")
                     continue
@@ -1042,14 +1024,7 @@ def _run_hf_recheck_analysis(
         cache_dataset(dataset_name, limit, ds)
         progress(0.05, desc=f"Датасет закэшаваны")
     
-    # Build audio map by filename
-    audio_map = {}
-    for item in ds:
-        path = item['audio']['path']
-        if path:
-            fname = os.path.basename(path)
-            audio_map[fname] = item
-            audio_map[path] = item
+    path_index = utils.build_dataset_path_index(ds)
     
     # Collect all items to process with their audio data
     items_to_process = []
@@ -1060,28 +1035,13 @@ def _run_hf_recheck_analysis(
         ref_text = result.get('ref_text', "")
         
         # If audio is missing, try to fetch from dataset
-        if audio_data is None or (hasattr(audio_data, '__len__') and len(audio_data) == 0):
-            path = result.get('path', '')
-            item = audio_map.get(path) or audio_map.get(os.path.basename(path))
-            
-            # Fallback: try to find by ID if path lookup failed
-            if not item:
-                rec_id = result.get('id')
-                if rec_id is not None:
-                    try:
-                        rec_id = int(rec_id)
-                        if 0 <= rec_id < len(ds):
-                            item = ds[rec_id]
-                    except:
-                        pass
-            
-            if item:
-                audio_data = item['audio']['array']
-                sampling_rate = item['audio']['sampling_rate']
+        if not _has_audio_data(audio_data):
+            audio_data, sampling_rate = _get_result_audio(ds, result, path_index=path_index)
+            if _has_audio_data(audio_data):
                 global_results[idx]['audio_array'] = audio_data
                 global_results[idx]['sampling_rate'] = sampling_rate
             else:
-                print(f"HF Recheck: Skipping index {idx}, path '{path}': Audio not found.")
+                print(f"HF Recheck: Skipping index {idx}, path '{result.get('path', '')}': Audio not found.")
                 continue
         
         items_to_process.append({

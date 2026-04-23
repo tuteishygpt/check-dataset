@@ -11,6 +11,7 @@ from analysis.standard import (
     ANALYSIS_SCOPE_PENDING,
     ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC,
     ANALYSIS_SCOPE_PROBLEMATIC,
+    _run_hf_recheck_analysis,
     _run_recheck_analysis,
     _run_vertex_batch_analysis,
     build_model_generation_config,
@@ -210,18 +211,20 @@ class AnalysisConfigTests(unittest.TestCase):
         )
 
         self.assertFalse(thinking_update["visible"])
-        self.assertEqual(execution_mode_update["value"], "batch")
-        self.assertEqual(execution_mode_update["choices"], [("Direct Request", "direct"), ("Flex Mode", "flex"), ("Batch Mode", "batch")])
+        self.assertEqual(execution_mode_update["value"], "direct")
+        self.assertEqual(execution_mode_update["choices"], [("Direct Request", "direct")])
 
     @patch("analysis.standard.save_results_csv")
     @patch("analysis.standard.gr.Warning")
-    @patch("analysis.standard._run_recheck_analysis", return_value=("stats", "flagged", "table"))
+    @patch("analysis.standard._run_recheck_analysis", return_value=("direct", "flagged", "table"))
+    @patch("analysis.standard._run_vertex_batch_analysis", return_value=("batch", "flagged", "table"))
     @patch("analysis.standard.validate_batch_inference")
     @patch("analysis.standard.GeminiIntegrator")
-    def test_standard_analysis_falls_back_to_direct_recheck_when_batch_recheck_selected(
+    def test_standard_analysis_uses_vertex_batch_for_problematic_scope_in_batch_mode(
         self,
         gemini_integrator_cls,
         validate_batch_inference_mock,
+        run_vertex_batch_analysis_mock,
         recheck_analysis_mock,
         warning_mock,
         save_results_csv_mock,
@@ -237,48 +240,70 @@ class AnalysisConfigTests(unittest.TestCase):
             thinking_budget=0,
             similarity_threshold=95,
             execution_mode="batch",
-            recheck_problematic=True,
+            analysis_scope=ANALYSIS_SCOPE_PROBLEMATIC,
             hf_token=None,
         )
 
-        self.assertEqual(outputs, ("stats", "flagged", "table"))
-        recheck_analysis_mock.assert_called_once()
-        warning_mock.assert_called_once()
+        self.assertEqual(outputs, ("batch", "flagged", "table"))
+        run_vertex_batch_analysis_mock.assert_called_once()
+        self.assertEqual(
+            run_vertex_batch_analysis_mock.call_args.kwargs["analysis_scope"],
+            ANALYSIS_SCOPE_PROBLEMATIC,
+        )
+        recheck_analysis_mock.assert_not_called()
+        warning_mock.assert_not_called()
         save_results_csv_mock.assert_called()
 
-    @patch("analysis.standard.save_results_csv")
-    @patch("analysis.standard._run_fresh_analysis", return_value=("stats", "flagged", "table"))
     @patch("analysis.standard.GeminiIntegrator")
-    def test_standard_analysis_falls_back_to_direct_for_unsupported_batch_model(
+    def test_standard_analysis_rejects_unknown_recognition_model(
         self,
         gemini_integrator_cls,
-        run_fresh_analysis_mock,
+    ):
+        with self.assertRaises(gr.Error):
+            run_analysis(
+                dataset_name="demo/dataset",
+                model_name="meta/llama-4-maverick",
+                limit_files=1,
+                temperature=0.2,
+                thinking_budget=0,
+                similarity_threshold=95,
+                execution_mode="batch",
+                recheck_problematic=False,
+                hf_token=None,
+            )
+
+        gemini_integrator_cls.assert_not_called()
+
+    @patch("analysis.standard.save_results_csv")
+    @patch("analysis.standard._run_hf_asr_analysis", return_value=("stats", "flagged", "table"))
+    def test_standard_analysis_ignores_vertex_mode_for_hf_model(
+        self,
+        run_hf_asr_analysis_mock,
         save_results_csv_mock,
     ):
-        gemini_integrator_cls.return_value.location = "global"
-
         outputs = run_analysis(
             dataset_name="demo/dataset",
-            model_name="meta/llama-4-maverick",
+            model_name="SeamlessM4T-v2 (HF)",
             limit_files=1,
             temperature=0.2,
             thinking_budget=0,
             similarity_threshold=95,
-            execution_mode="batch",
+            execution_mode="turbo",
             recheck_problematic=False,
             hf_token=None,
         )
 
         self.assertEqual(outputs, ("stats", "flagged", "table"))
-        run_fresh_analysis_mock.assert_called_once()
-        self.assertEqual(run_fresh_analysis_mock.call_args.args[1], "meta/llama-4-maverick")
+        run_hf_asr_analysis_mock.assert_called_once()
         save_results_csv_mock.assert_called()
 
     @patch("analysis.standard.save_results_csv")
+    @patch("analysis.standard.GeminiIntegrator")
     @patch("analysis.standard._run_hf_asr_analysis", return_value=("stats", "flagged", "table"))
-    def test_standard_analysis_ignores_batch_mode_for_hf_model(
+    def test_standard_analysis_does_not_initialize_vertex_for_hf_model(
         self,
         run_hf_asr_analysis_mock,
+        gemini_integrator_cls,
         save_results_csv_mock,
     ):
         outputs = run_analysis(
@@ -295,6 +320,7 @@ class AnalysisConfigTests(unittest.TestCase):
 
         self.assertEqual(outputs, ("stats", "flagged", "table"))
         run_hf_asr_analysis_mock.assert_called_once()
+        gemini_integrator_cls.assert_not_called()
         save_results_csv_mock.assert_called()
 
     @patch("analysis.standard.save_results_csv")
@@ -463,6 +489,54 @@ class AnalysisConfigTests(unittest.TestCase):
         self.assertEqual(calculate_similarity_mock.call_count, 2)
         generate_dashboard_outputs_mock.assert_called_once_with(95)
 
+    @patch("analysis.standard.save_results_csv")
+    @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
+    @patch("analysis.standard.utils.calculate_similarity", return_value=(97, "ref", "hyp"))
+    @patch("analysis.standard.utils.decode_audio_item", return_value=([0.9], 16000, "bad.wav"))
+    @patch("analysis.standard.get_cached_dataset")
+    def test_hf_recheck_decodes_raw_audio_without_array_key(
+        self,
+        get_cached_dataset_mock,
+        decode_audio_item_mock,
+        calculate_similarity_mock,
+        generate_dashboard_outputs_mock,
+        save_results_csv_mock,
+    ):
+        set_global_results([
+            {
+                "id": 0,
+                "path": "bad.wav",
+                "ref_text": "ref",
+                "score": 80,
+                "verification_status": "incorrect",
+                "model_results": {},
+            }
+        ])
+        get_cached_dataset_mock.return_value = [
+            {"audio": {"path": "bad.wav", "bytes": b"raw-audio"}}
+        ]
+        hf_client = Mock()
+        hf_client.transcribe_batch.return_value = {0: "hyp"}
+
+        outputs = _run_hf_recheck_analysis(
+            hf_client=hf_client,
+            model_name="SeamlessM4T-v2 (HF)",
+            dataset_name="demo/dataset",
+            limit_files=0,
+            analysis_scope=ANALYSIS_SCOPE_PROBLEMATIC,
+            similarity_threshold=95,
+            hf_token=None,
+            progress=lambda *args, **kwargs: None,
+        )
+
+        self.assertEqual(outputs, ("stats", "flagged", "table"))
+        batch_audio = hf_client.transcribe_batch.call_args.args[0]
+        self.assertEqual(batch_audio, [(0, [0.9], 16000)])
+        decode_audio_item_mock.assert_called_once()
+        calculate_similarity_mock.assert_called_once_with("ref", "hyp")
+        generate_dashboard_outputs_mock.assert_called_once_with(95)
+        save_results_csv_mock.assert_called_once()
+
     @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
     @patch("analysis.standard.utils.calculate_similarity", return_value=(97, "ref", "hyp"))
     @patch("analysis.standard.utils.decode_audio_item", return_value=([0.9], 16000, "pending.wav"))
@@ -495,6 +569,7 @@ class AnalysisConfigTests(unittest.TestCase):
             model_name="gemini-2.5-flash-lite",
             dataset_name="demo/dataset",
             limit_files=0,
+            analysis_scope=ANALYSIS_SCOPE_PENDING,
             similarity_threshold=95,
             gen_config={"temperature": 0.2},
             hf_token=None,
@@ -507,6 +582,62 @@ class AnalysisConfigTests(unittest.TestCase):
         self.assertEqual(batch_records[0]["sampling_rate"], 16000)
         decode_audio_item_mock.assert_called_once()
         calculate_similarity_mock.assert_called_once_with("pending", "batch text")
+        generate_dashboard_outputs_mock.assert_called_once_with(95)
+
+    @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
+    @patch("analysis.standard.utils.calculate_similarity", return_value=(96, "ref", "hyp"))
+    @patch("analysis.standard.utils.decode_audio_item", return_value=([0.4], 16000, "bad.wav"))
+    @patch("analysis.standard._load_analysis_dataset")
+    def test_vertex_batch_problematic_scope_rechecks_existing_results(
+        self,
+        load_analysis_dataset_mock,
+        decode_audio_item_mock,
+        calculate_similarity_mock,
+        generate_dashboard_outputs_mock,
+    ):
+        set_global_results([
+            {
+                "id": 0,
+                "path": "bad.wav",
+                "ref_text": "ref",
+                "score": 80,
+                "verification_status": "incorrect",
+                "model_results": {},
+            },
+            {
+                "id": 1,
+                "path": "ok.wav",
+                "ref_text": "ok",
+                "score": 99,
+                "verification_status": "correct",
+                "model_results": {},
+            },
+        ])
+        load_analysis_dataset_mock.return_value = [
+            {"audio": {"path": "bad.wav", "bytes": b"raw-audio"}},
+            {"audio": {"path": "ok.wav", "bytes": b"raw-audio"}},
+        ]
+        gemini_tool = Mock()
+        gemini_tool.transcribe_audio_batch.return_value = {0: "hyp"}
+
+        outputs = _run_vertex_batch_analysis(
+            gemini_tool=gemini_tool,
+            model_name="gemini-2.5-flash-lite",
+            dataset_name="demo/dataset",
+            limit_files=0,
+            analysis_scope=ANALYSIS_SCOPE_PROBLEMATIC,
+            similarity_threshold=95,
+            gen_config={"temperature": 0.2},
+            hf_token=None,
+            progress=lambda *args, **kwargs: None,
+        )
+
+        self.assertEqual(outputs, ("stats", "flagged", "table"))
+        batch_records = gemini_tool.transcribe_audio_batch.call_args.args[1]
+        self.assertEqual([record["id"] for record in batch_records], [0])
+        self.assertEqual(batch_records[0]["audio_array"], [0.4])
+        decode_audio_item_mock.assert_called_once()
+        calculate_similarity_mock.assert_called_once_with("ref", "hyp")
         generate_dashboard_outputs_mock.assert_called_once_with(95)
 
     @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
@@ -535,6 +666,7 @@ class AnalysisConfigTests(unittest.TestCase):
             model_name="gemini-2.5-flash-lite",
             dataset_name="demo/dataset",
             limit_files=0,
+            analysis_scope=ANALYSIS_SCOPE_ALL,
             similarity_threshold=95,
             gen_config={"temperature": 0.2},
             hf_token=None,
