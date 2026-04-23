@@ -3,13 +3,27 @@ import os
 import gradio as gr
 
 import utils
-from core.state import get_global_results, set_global_results
+from core.console import safe_print as print
+from core.state import (
+    append_analysis_log,
+    get_global_results,
+    set_analysis_running,
+    set_global_results,
+)
 from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator, build_generation_config, validate_flex_inference
 from analysis.import_export import save_results_csv
 from gemini_api import is_transcription_error
+from analysis.standard import (
+    ANALYSIS_SCOPE_ALL,
+    ANALYSIS_SCOPE_PENDING,
+    ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC,
+    ANALYSIS_SCOPE_PROBLEMATIC,
+    get_analysis_target_indices,
+    normalize_analysis_scope,
+)
 
 STANDARD_SMART_MODELS = [
     ("gemini-2.5-flash-lite", "Step 1/4: Flash-Lite"),
@@ -45,12 +59,14 @@ def run_smart_analysis(
     thinking_budget: int,
     similarity_threshold: int,
     flex_mode: bool = False,
+    analysis_scope: str = None,
     recheck_problematic: bool = False,
     hf_token: str = None,
     progress=gr.Progress()
 ):
     from core.state import set_stop_requested, get_stop_requested
     set_stop_requested(False)
+    set_analysis_running(True)
     
     global_results = get_global_results()
     
@@ -59,6 +75,10 @@ def run_smart_analysis(
     thinking_budget = int(float(thinking_budget)) if thinking_budget else 0
     similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
     temperature = float(temperature)
+    analysis_scope = normalize_analysis_scope(
+        analysis_scope,
+        recheck_problematic=recheck_problematic,
+    )
 
     models = get_smart_models(flex_mode=flex_mode)
 
@@ -76,16 +96,19 @@ def run_smart_analysis(
         step_desc = models[0][1]
         model_name = models[0][0]
 
-        if recheck_problematic:
-            results = _smart_recheck_first_pass(
+        if analysis_scope == ANALYSIS_SCOPE_ALL or (
+            analysis_scope in {ANALYSIS_SCOPE_PENDING, ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC}
+            and not global_results
+        ):
+            results = _smart_fresh_first_pass(
                 gemini_tool, model_name, step_desc, dataset_name,
-                limit_files, similarity_threshold, gen_config, 
+                limit_files, analysis_scope, similarity_threshold, gen_config,
                 hf_token, progress
             )
         else:
-            results = _smart_fresh_first_pass(
+            results = _smart_recheck_first_pass(
                 gemini_tool, model_name, step_desc, dataset_name,
-                limit_files, similarity_threshold, gen_config, 
+                limit_files, analysis_scope, similarity_threshold, gen_config,
                 hf_token, progress
             )
 
@@ -174,16 +197,18 @@ def run_smart_analysis(
         return generate_dashboard_outputs(similarity_threshold)
 
     except Exception as e:
+        append_analysis_log(f"Smart Analysis failed: {e}")
         print(f"❌ Smart Analysis failed: {e}")
         save_results_csv(dataset_name, auto_prefix=True)
         raise gr.Error(f"Памылка: {e}")
     finally:
+        set_analysis_running(False)
         save_results_csv(dataset_name, auto_prefix=True)
 
 
 def _smart_recheck_first_pass(
     gemini_tool, model_name, step_desc, dataset_name,
-    limit_files, similarity_threshold, gen_config, 
+    limit_files, analysis_scope, similarity_threshold, gen_config,
     hf_token, progress
 ):
     """First pass for recheck mode."""
@@ -195,15 +220,12 @@ def _smart_recheck_first_pass(
     
     results = global_results
     
-    # Identify start set: only problematic items
-    problematic_indices = [
-        i for i, r in enumerate(results) 
-        if r is not None and r.get('score', 0) < similarity_threshold 
-        and r.get('verification_status') != 'correct'
-    ]
-    
-    if limit_files > 0:
-        problematic_indices = problematic_indices[:limit_files]
+    problematic_indices = get_analysis_target_indices(
+        results,
+        analysis_scope,
+        similarity_threshold,
+        limit_files=limit_files,
+    )
     
     if not problematic_indices:
         gr.Info("Няма праблемных файлаў для пераправеркі.")
@@ -310,7 +332,7 @@ def _smart_recheck_first_pass(
 
 def _smart_fresh_first_pass(
     gemini_tool, model_name, step_desc, dataset_name,
-    limit_files, similarity_threshold, gen_config, 
+    limit_files, analysis_scope, similarity_threshold, gen_config,
     hf_token, progress
 ):
     """First pass for fresh analysis, resuming from pending files if they exist."""
@@ -322,7 +344,7 @@ def _smart_fresh_first_pass(
         if r is not None and r.get('verification_status') == 'pending'
     ]
 
-    if pending_indices:
+    if analysis_scope == ANALYSIS_SCOPE_PENDING and pending_indices:
         print(f"▶️ Smart: аднаўленне — знойдзена {len(pending_indices)} неапрацаваных файлаў (pending)")
         if limit_files > 0:
             pending_indices = pending_indices[:limit_files]

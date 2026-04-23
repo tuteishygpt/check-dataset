@@ -1,9 +1,15 @@
 """Gradio interface for TTS Dataset Validator."""
 import gradio as gr
 
-from core.state import clear_dataset_cache, get_dataset_cache
+from core.state import clear_dataset_cache, get_analysis_logs_text, get_dataset_cache
 from ui.styles import custom_css, head_js
-from analysis.standard import run_analysis
+from analysis.standard import (
+    ANALYSIS_SCOPE_ALL,
+    ANALYSIS_SCOPE_PENDING,
+    ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC,
+    ANALYSIS_SCOPE_PROBLEMATIC,
+    run_analysis,
+)
 from analysis.smart import run_smart_analysis
 from analysis.import_export import (
     create_verified_dataset,
@@ -11,12 +17,38 @@ from analysis.import_export import (
     save_results_csv,
     verify_action,
 )
-from hf_asr import get_all_asr_model_choices
+from gemini_api import supports_batch_inference
+from hf_asr import get_all_asr_model_choices, is_hf_asr_model
+
+
+DIRECT_AND_FLEX_CHOICES = [
+    ("Direct Request", "direct"),
+    ("Flex Mode", "flex"),
+]
+BATCH_CHOICES = DIRECT_AND_FLEX_CHOICES + [("Batch Mode", "batch")]
 
 
 def update_thinking_visibility(model_name: str):
     """Update thinking budget visibility based on model."""
     return gr.update(visible="thinking" in model_name)
+
+
+def update_model_controls(model_name: str, execution_mode: str):
+    """Update thinking visibility and supported execution modes for the model."""
+    supports_batch = is_hf_asr_model(model_name) or supports_batch_inference(model_name)
+    resolved_mode = execution_mode
+    if is_hf_asr_model(model_name):
+        resolved_mode = execution_mode or "direct"
+    elif resolved_mode == "batch" and not supports_batch:
+        resolved_mode = "direct"
+
+    return (
+        update_thinking_visibility(model_name),
+        gr.update(
+            choices=BATCH_CHOICES if supports_batch else DIRECT_AND_FLEX_CHOICES,
+            value=resolved_mode,
+        ),
+    )
 
 
 def clear_cache():
@@ -38,6 +70,12 @@ def get_cache_status():
     )
 
 
+def get_analysis_logs_display():
+    """Return analysis logs for the live UI panel."""
+    logs_text = get_analysis_logs_text()
+    return logs_text or "Лагі аналізу з'явяцца тут падчас выканання."
+
+
 def _run_smart_analysis_with_mode(
     dataset_name,
     limit_files,
@@ -45,8 +83,9 @@ def _run_smart_analysis_with_mode(
     thinking_budget,
     similarity_threshold,
     execution_mode,
-    recheck_problematic,
-    hf_token,
+    analysis_scope,
+    hf_token=None,
+    recheck_problematic=False,
     progress=gr.Progress(),
 ):
     """Map UI execution mode to the existing smart analysis flow."""
@@ -60,7 +99,34 @@ def _run_smart_analysis_with_mode(
         thinking_budget,
         similarity_threshold,
         flex_mode=execution_mode == "flex",
-        recheck_problematic=recheck_problematic,
+        analysis_scope=analysis_scope,
+        hf_token=hf_token,
+        progress=progress,
+    )
+
+
+def _run_standard_analysis_with_mode(
+    dataset_name,
+    model_name,
+    limit_files,
+    temperature,
+    thinking_budget,
+    similarity_threshold,
+    execution_mode,
+    analysis_scope,
+    hf_token,
+    progress=gr.Progress(),
+):
+    """Forward the explicit analysis scope to standard analysis."""
+    return run_analysis(
+        dataset_name,
+        model_name,
+        limit_files,
+        temperature,
+        thinking_budget,
+        similarity_threshold,
+        execution_mode,
+        analysis_scope=analysis_scope,
         hf_token=hf_token,
         progress=progress,
     )
@@ -158,11 +224,7 @@ def create_interface():
 
                 execution_mode = gr.Radio(
                     label="Рэжым Vertex",
-                    choices=[
-                        ("Direct Request", "direct"),
-                        ("Flex Mode", "flex"),
-                        ("Batch Mode", "batch"),
-                    ],
+                    choices=BATCH_CHOICES,
                     value="direct",
                     interactive=True,
                     info=(
@@ -183,13 +245,16 @@ def create_interface():
                     elem_classes=["smart-btn"],
                 )
 
-                recheck_problematic = gr.Checkbox(
-                    label="Пераправерыць толькі праблемныя файлы",
-                    value=False,
-                    info=(
-                        "Калі ўключана, аналіз будзе запускацца толькі для файлаў "
-                        "з нізкім рэйтынгам."
-                    ),
+                analysis_scope = gr.Radio(
+                    label="Якія файлы аналізаваць",
+                    choices=[
+                        ("Усе", ANALYSIS_SCOPE_ALL),
+                        ("Праблемныя", ANALYSIS_SCOPE_PROBLEMATIC),
+                        ("Неапрацаваныя", ANALYSIS_SCOPE_PENDING),
+                        ("Праблемныя і неапрацаваныя", ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC),
+                    ],
+                    value=ANALYSIS_SCOPE_PENDING,
+                    info="За маўчанні аналізуюцца толькі неапрацаваныя файлы.",
                 )
 
                 stop_btn = gr.Button(
@@ -205,7 +270,7 @@ def create_interface():
                         "🧠 Разумны аналіз выкарыстоўвае 3 мадэлі паслядоўна: "
                         "Flash-Lite → Flash → Gemini-3-Flash. "
                         "Flex PayGo uses the Gemini 3 preview chain on `global`. "
-                        "Batch mode currently works only with the standard analysis button."
+                        "Batch mode works only with the standard analysis button and only for fresh analysis."
                         "</small>"
                     ),
                     sanitize=False,
@@ -222,6 +287,18 @@ def create_interface():
                     sanitize=False,
                 )
                 clear_cache_btn = gr.Button("🗑️ Ачысціць кэш датасету", size="sm")
+
+                gr.Markdown("### 📤 Экспарт")
+                with gr.Row():
+                    download_btn = gr.Button("💾 Спампаваць вынікі (CSV)", size="lg")
+                    download_file = gr.File(label="Файл вынікаў", file_count="single")
+
+                with gr.Row():
+                    create_ds_btn = gr.Button(
+                        "🤗 Стварыць правераны датасэт",
+                        variant="primary",
+                    )
+                    create_ds_output = gr.Markdown()
 
             with gr.Column(scale=2, elem_classes=["results-panel"]):
                 gr.Markdown("### 📊 Статыстыка")
@@ -243,29 +320,28 @@ def create_interface():
                         wrap=True,
                     )
 
-                gr.Markdown("### 📤 Экспарт")
-                with gr.Row():
-                    download_btn = gr.Button("💾 Спампаваць вынікі (CSV)", size="lg")
-                    download_file = gr.File(label="Файл вынікаў", file_count="single")
-
-                with gr.Row():
-                    create_ds_btn = gr.Button(
-                        "🤗 Стварыць правераны датасэт",
-                        variant="primary",
+                with gr.Accordion("📜 Логі аналізу", open=False):
+                    analysis_logs_output = gr.Textbox(
+                        value=get_analysis_logs_display,
+                        every=1.0,
+                        lines=14,
+                        max_lines=20,
+                        interactive=False,
+                        show_label=False,
+                        elem_id="analysis_logs_output",
                     )
-                    create_ds_output = gr.Markdown()
 
                 verification_data = gr.Textbox(elem_id="verification_data_input", visible=True)
                 verification_trigger = gr.Button(elem_id="verification_trigger_btn", visible=True)
 
         model_name.change(
-            fn=update_thinking_visibility,
-            inputs=[model_name],
-            outputs=[thinking_budget],
+            fn=update_model_controls,
+            inputs=[model_name, execution_mode],
+            outputs=[thinking_budget, execution_mode],
         )
 
         analyze_event = analyze_btn.click(
-            fn=run_analysis,
+            fn=_run_standard_analysis_with_mode,
             inputs=[
                 dataset_name,
                 model_name,
@@ -274,7 +350,7 @@ def create_interface():
                 thinking_budget,
                 similarity_threshold,
                 execution_mode,
-                recheck_problematic,
+                analysis_scope,
                 hf_token,
             ],
             outputs=[stats_output, flagged_output, results_table],
@@ -295,7 +371,7 @@ def create_interface():
                 thinking_budget,
                 similarity_threshold,
                 execution_mode,
-                recheck_problematic,
+                analysis_scope,
                 hf_token,
             ],
             outputs=[stats_output, flagged_output, results_table],

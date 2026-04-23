@@ -4,7 +4,12 @@ import time
 import gradio as gr
 
 import utils
-from core.state import get_global_results, set_global_results
+from core.console import safe_print as print
+from core.state import (
+    get_global_results,
+    set_analysis_running,
+    set_global_results,
+)
 from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result
 from ui.dashboard import generate_dashboard_outputs
@@ -12,11 +17,23 @@ from gemini_api import (
     GeminiIntegrator,
     build_generation_config,
     is_transcription_error,
+    supports_batch_inference,
     validate_batch_inference,
     validate_flex_inference,
 )
 from hf_asr import is_hf_asr_model, get_hf_asr_client, HF_BATCH_SIZE
 from analysis.import_export import save_results_csv
+
+ANALYSIS_SCOPE_ALL = "all"
+ANALYSIS_SCOPE_PROBLEMATIC = "problematic"
+ANALYSIS_SCOPE_PENDING = "pending"
+ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC = "problematic_or_pending"
+ANALYSIS_SCOPES = {
+    ANALYSIS_SCOPE_ALL,
+    ANALYSIS_SCOPE_PROBLEMATIC,
+    ANALYSIS_SCOPE_PENDING,
+    ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC,
+}
 
 
 def build_model_generation_config(
@@ -44,6 +61,69 @@ def normalize_execution_mode(execution_mode: str = None, flex_mode: bool = False
     if resolved_mode not in {"direct", "flex", "batch"}:
         raise ValueError(f"Unsupported execution mode: {execution_mode}")
     return resolved_mode
+
+
+def normalize_analysis_scope(
+    analysis_scope: str = None,
+    *,
+    recheck_problematic: bool = False,
+) -> str:
+    """Normalize analysis scope while supporting the legacy checkbox flag."""
+    if analysis_scope is None:
+        return ANALYSIS_SCOPE_PROBLEMATIC if recheck_problematic else ANALYSIS_SCOPE_ALL
+
+    resolved_scope = analysis_scope.strip().lower()
+    if resolved_scope not in ANALYSIS_SCOPES:
+        raise ValueError(f"Unsupported analysis scope: {analysis_scope}")
+    return resolved_scope
+
+
+def get_analysis_target_indices(
+    results,
+    analysis_scope: str,
+    similarity_threshold: int,
+    limit_files: int = 0,
+):
+    """Return ordered result indices matching the selected scope."""
+    scope = normalize_analysis_scope(analysis_scope)
+
+    target_indices = []
+    for idx, result in enumerate(results):
+        if result is None:
+            continue
+
+        is_problematic = (
+            result.get("score", 0) < similarity_threshold
+            and result.get("verification_status") != "correct"
+        )
+        is_pending = result.get("verification_status") == "pending"
+
+        if scope == ANALYSIS_SCOPE_ALL:
+            target_indices.append(idx)
+        elif scope == ANALYSIS_SCOPE_PROBLEMATIC and is_problematic:
+            target_indices.append(idx)
+        elif scope == ANALYSIS_SCOPE_PENDING and is_pending:
+            target_indices.append(idx)
+        elif scope == ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC and (is_problematic or is_pending):
+            target_indices.append(idx)
+
+    if limit_files > 0:
+        target_indices = target_indices[:limit_files]
+    return target_indices
+
+
+def resolve_execution_mode(model_name: str, execution_mode: str) -> str:
+    """Downgrade unsupported execution modes to a safe default."""
+    if is_hf_asr_model(model_name):
+        return "direct"
+
+    if execution_mode == "batch" and not supports_batch_inference(model_name):
+        print(
+            "Batch mode is unsupported for model "
+            f"{model_name}; falling back to direct mode."
+        )
+        return "direct"
+    return execution_mode
 
 
 def _load_analysis_dataset(dataset_name: str, limit: int, hf_token: str, progress, *, initial_progress: float = 0.0):
@@ -80,6 +160,7 @@ def run_analysis(
     thinking_budget: int,
     similarity_threshold: int,
     execution_mode: str = None,
+    analysis_scope: str = None,
     recheck_problematic: bool = False,
     hf_token: str = None,
     progress=gr.Progress(),
@@ -88,29 +169,37 @@ def run_analysis(
     from core.state import set_stop_requested
 
     set_stop_requested(False)
+    set_analysis_running(True)
 
     execution_mode = normalize_execution_mode(execution_mode, flex_mode=flex_mode)
+    execution_mode = resolve_execution_mode(model_name, execution_mode)
+    analysis_scope = normalize_analysis_scope(
+        analysis_scope,
+        recheck_problematic=recheck_problematic,
+    )
     limit_files = int(float(limit_files)) if limit_files else 0
     thinking_budget = int(float(thinking_budget)) if thinking_budget else 0
     similarity_threshold = int(float(similarity_threshold)) if similarity_threshold else 90
     temperature = float(temperature)
 
-    if is_hf_asr_model(model_name):
-        if execution_mode == "batch":
-            raise gr.Error("Vertex Batch mode is available only for Gemini models on Vertex AI.")
-        outputs = _run_hf_asr_analysis(
-            model_name,
-            dataset_name,
-            limit_files,
-            similarity_threshold,
-            recheck_problematic,
-            hf_token,
-            progress,
-        )
-        save_results_csv(dataset_name, auto_prefix=True)
-        return outputs
-
     try:
+        global_results = get_global_results()
+
+        if is_hf_asr_model(model_name):
+            if execution_mode == "batch":
+                raise gr.Error("Vertex Batch mode is available only for Gemini models on Vertex AI.")
+            outputs = _run_hf_asr_analysis(
+                model_name,
+                dataset_name,
+                limit_files,
+                analysis_scope,
+                similarity_threshold,
+                hf_token,
+                progress,
+            )
+            save_results_csv(dataset_name, auto_prefix=True)
+            return outputs
+
         gemini_tool = GeminiIntegrator()
         gen_config = build_model_generation_config(
             model_name=model_name,
@@ -121,20 +210,8 @@ def run_analysis(
         )
 
         if execution_mode == "batch":
-            validate_batch_inference(model_name)
-            if recheck_problematic:
-                gr.Warning("Vertex Batch mode currently applies to fresh analysis; recheck uses direct requests.")
-                outputs = _run_recheck_analysis(
-                    gemini_tool,
-                    model_name,
-                    dataset_name,
-                    limit_files,
-                    similarity_threshold,
-                    gen_config,
-                    hf_token,
-                    progress,
-                )
-            else:
+            if analysis_scope in {ANALYSIS_SCOPE_ALL, ANALYSIS_SCOPE_PENDING}:
+                validate_batch_inference(model_name)
                 outputs = _run_vertex_batch_analysis(
                     gemini_tool,
                     model_name,
@@ -145,35 +222,69 @@ def run_analysis(
                     hf_token,
                     progress,
                 )
-        elif recheck_problematic:
-            outputs = _run_recheck_analysis(
+            else:
+                gr.Warning(
+                    "Vertex Batch mode currently applies only to the 'Усе' and 'Неапрацаваныя' scopes; "
+                    "the selected scope will use direct requests."
+                )
+                if analysis_scope == ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC and not global_results:
+                    outputs = _run_fresh_analysis(
+                        gemini_tool,
+                        model_name,
+                        dataset_name,
+                        limit_files,
+                        analysis_scope,
+                        similarity_threshold,
+                        gen_config,
+                        hf_token,
+                        progress,
+                    )
+                else:
+                    outputs = _run_recheck_analysis(
+                        gemini_tool,
+                        model_name,
+                        dataset_name,
+                        limit_files,
+                        analysis_scope,
+                        similarity_threshold,
+                        gen_config,
+                        hf_token,
+                        progress,
+                    )
+        elif analysis_scope == ANALYSIS_SCOPE_ALL or (
+            analysis_scope in {ANALYSIS_SCOPE_PENDING, ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC}
+            and not global_results
+        ):
+            outputs = _run_fresh_analysis(
                 gemini_tool,
                 model_name,
                 dataset_name,
                 limit_files,
+                analysis_scope,
                 similarity_threshold,
                 gen_config,
                 hf_token,
                 progress,
             )
         else:
-            outputs = _run_fresh_analysis(
+            outputs = _run_recheck_analysis(
                 gemini_tool,
                 model_name,
                 dataset_name,
                 limit_files,
+                analysis_scope,
                 similarity_threshold,
                 gen_config,
                 hf_token,
                 progress,
             )
-
         return outputs
     except Exception as e:
         print(f"Analysis failed: {e}")
         save_results_csv(dataset_name, auto_prefix=True)
         raise gr.Error(f"Error: {e}")
     finally:
+        set_analysis_running(False)
         save_results_csv(dataset_name, auto_prefix=True)
 
 
@@ -218,8 +329,7 @@ def _run_vertex_batch_analysis(
                 item = audio_map.get(path) or audio_map.get(os.path.basename(path))
                 if item is None:
                     continue
-                audio_data = item["audio"]["array"]
-                sampling_rate = item["audio"]["sampling_rate"]
+                audio_data, sampling_rate, _ = utils.decode_audio_item(item)
                 results[idx]["audio_array"] = audio_data
                 results[idx]["sampling_rate"] = sampling_rate
 
@@ -240,16 +350,17 @@ def _run_vertex_batch_analysis(
 
         for idx, item in enumerate(ds):
             ref_text = item.get("sentence") or item.get("text") or item.get("transcription") or item.get("transcript") or ""
+            audio_data, sampling_rate, audio_path = utils.decode_audio_item(item)
             result_record = {
                 "id": idx,
-                "path": item["audio"]["path"],
+                "path": audio_path,
                 "ref_text": ref_text,
                 "hyp_text": "",
                 "score": 0,
                 "norm_ref": "",
                 "norm_hyp": "",
-                "audio_array": item["audio"]["array"],
-                "sampling_rate": item["audio"]["sampling_rate"],
+                "audio_array": audio_data,
+                "sampling_rate": sampling_rate,
                 "model_used": model_name,
                 "verification_status": "pending",
                 "model_results": {},
@@ -327,25 +438,22 @@ def _run_vertex_batch_analysis(
 
 def _run_recheck_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    similarity_threshold, gen_config, 
-    hf_token, progress
+    analysis_scope=ANALYSIS_SCOPE_PROBLEMATIC, similarity_threshold=None, gen_config=None,
+    hf_token=None, progress=None
 ):
-    """Run recheck of problematic files."""
+    """Run analysis for a selected subset of existing results."""
     global_results = get_global_results()
     
     if not global_results:
         gr.Warning("Няма вынікаў для пераправеркі.")
         return generate_dashboard_outputs(similarity_threshold)
     
-    # Identify problematic records
-    target_indices = [
-        i for i, r in enumerate(global_results) 
-        if r is not None and r.get('score', 0) < similarity_threshold 
-        and r.get('verification_status') != 'correct'
-    ]
-    
-    if limit_files > 0:
-        target_indices = target_indices[:limit_files]
+    target_indices = get_analysis_target_indices(
+        global_results,
+        analysis_scope,
+        similarity_threshold,
+        limit_files=limit_files,
+    )
     
     if not target_indices:
         gr.Info("Няма праблемных файлаў для пераправеркі.")
@@ -455,7 +563,7 @@ def _run_recheck_analysis(
 
 def _run_fresh_analysis(
     gemini_tool, model_name, dataset_name, limit_files,
-    similarity_threshold, gen_config, 
+    analysis_scope, similarity_threshold, gen_config,
     hf_token, progress
 ):
     """Run fresh analysis, resuming from pending files if they exist."""
@@ -467,7 +575,7 @@ def _run_fresh_analysis(
         if r is not None and r.get('verification_status') == 'pending'
     ]
 
-    if pending_indices:
+    if analysis_scope == ANALYSIS_SCOPE_PENDING and pending_indices:
         # Resume: process only pending files
         print(f"▶️ Аднаўленне аналізу: знойдзена {len(pending_indices)} неапрацаваных файлаў (pending)")
         if limit_files > 0:
@@ -628,8 +736,8 @@ def _run_hf_asr_analysis(
     model_name: str,
     dataset_name: str,
     limit_files: int,
+    analysis_scope: str,
     similarity_threshold: int,
-    recheck_problematic: bool,
     hf_token: str,
     progress
 ):
@@ -642,21 +750,24 @@ def _run_hf_asr_analysis(
     except Exception as e:
         raise gr.Error(f"Памылка падключэння да HF: {e}")
     
-    if recheck_problematic:
-        return _run_hf_recheck_analysis(
-            hf_client, model_name, dataset_name, limit_files,
-            similarity_threshold, hf_token, progress
-        )
-    else:
+    if analysis_scope == ANALYSIS_SCOPE_ALL or (
+        analysis_scope in {ANALYSIS_SCOPE_PENDING, ANALYSIS_SCOPE_PENDING_OR_PROBLEMATIC}
+        and not global_results
+    ):
         return _run_hf_fresh_analysis(
             hf_client, model_name, dataset_name, limit_files,
-            similarity_threshold, hf_token, progress
+            analysis_scope, similarity_threshold, hf_token, progress
+        )
+    else:
+        return _run_hf_recheck_analysis(
+            hf_client, model_name, dataset_name, limit_files,
+            analysis_scope, similarity_threshold, hf_token, progress
         )
 
 
 def _run_hf_fresh_analysis(
     hf_client, model_name, dataset_name, limit_files,
-    similarity_threshold, hf_token, progress
+    analysis_scope, similarity_threshold, hf_token, progress
 ):
     """Run fresh HF ASR analysis, resuming from pending files if they exist."""
     global_results = get_global_results()
@@ -667,7 +778,7 @@ def _run_hf_fresh_analysis(
         if r is not None and r.get('verification_status') == 'pending'
     ]
 
-    if pending_indices:
+    if analysis_scope == ANALYSIS_SCOPE_PENDING and pending_indices:
         # Resume mode: process only pending items
         print(f"▶️ HF ASR: аднаўленне — знойдзена {len(pending_indices)} неапрацаваных файлаў (pending)")
         if limit_files > 0:
@@ -684,6 +795,8 @@ def _run_hf_fresh_analysis(
             ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token, decode_audio=False)
             cache_dataset(dataset_name, limit, ds)
             progress(0.1, desc="Dataset cached for reuse")
+
+        path_index = utils.build_dataset_path_index(ds)
 
         # Build audio map
         audio_map = {}
@@ -897,7 +1010,7 @@ def _run_hf_fresh_analysis(
 
 def _run_hf_recheck_analysis(
     hf_client, model_name, dataset_name, limit_files,
-    similarity_threshold, hf_token, progress
+    analysis_scope, similarity_threshold, hf_token, progress
 ):
     """Run recheck of problematic files using HF ASR with batch processing."""
     global_results = get_global_results()
@@ -906,15 +1019,12 @@ def _run_hf_recheck_analysis(
         gr.Warning("Няма вынікаў для пераправеркі.")
         return generate_dashboard_outputs(similarity_threshold)
     
-    # Identify problematic records
-    target_indices = [
-        i for i, r in enumerate(global_results) 
-        if r is not None and r.get('score', 0) < similarity_threshold 
-        and r.get('verification_status') != 'correct'
-    ]
-    
-    if limit_files > 0:
-        target_indices = target_indices[:limit_files]
+    target_indices = get_analysis_target_indices(
+        global_results,
+        analysis_scope,
+        similarity_threshold,
+        limit_files=limit_files,
+    )
     
     if not target_indices:
         gr.Info("Няма праблемных файлаў для пераправеркі.")

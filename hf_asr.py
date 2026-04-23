@@ -4,6 +4,7 @@ import time
 import tempfile
 import soundfile as sf
 from gradio_client import Client, handle_file
+from core.console import safe_print as print
 from hf_auth import normalize_hf_token
 
 

@@ -6,9 +6,22 @@ import soundfile as sf
 import numpy as np
 
 
+def _has_audio_samples(audio_array) -> bool:
+    """Return True only for non-scalar audio payloads with at least one sample."""
+    if audio_array is None:
+        return False
+    if np.isscalar(audio_array):
+        return False
+
+    try:
+        return len(audio_array) > 0
+    except TypeError:
+        return False
+
+
 def array_to_b64_audio(audio_array, sampling_rate):
     """Convert numpy array audio to base64 encoded HTML audio tag."""
-    if audio_array is None or len(audio_array) == 0:
+    if not _has_audio_samples(audio_array):
         return '<div style="width: 100%; margin-top: 10px; height: 36px; border-radius: 8px; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: #64748b;">🔇 Аўдыя недаступна</div>'
 
     buffer = io.BytesIO()
@@ -29,7 +42,7 @@ def get_audio_for_row(global_results, row_index: int):
         return None
 
     row = global_results[row_index]
-    if row.get('audio_array') is None or len(row.get('audio_array')) == 0:
+    if not _has_audio_samples(row.get('audio_array')):
         return None
 
     buffer = io.BytesIO()

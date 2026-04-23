@@ -76,6 +76,11 @@ def supports_flex_inference(model_name: str, location: Optional[str] = None) -> 
     return normalized_location == DEFAULT_VERTEX_LOCATION and model_name in FLEX_SUPPORTED_MODELS
 
 
+def supports_batch_inference(model_name: str) -> bool:
+    """Return whether the model supports Vertex Batch in this app."""
+    return model_name in BATCH_SUPPORTED_MODELS
+
+
 def validate_flex_inference(model_name: str, location: Optional[str] = None) -> None:
     """Validate the current model/location against Vertex Flex PayGo limits."""
     normalized_location = (location or os.getenv("GOOGLE_CLOUD_LOCATION") or DEFAULT_VERTEX_LOCATION).strip().lower()
@@ -104,7 +109,7 @@ def validate_batch_inference(
         raise RuntimeError(
             f"Vertex Batch mode requires {VERTEX_BATCH_GCS_URI_ENV}=gs://bucket/prefix."
         )
-    if model_name not in BATCH_SUPPORTED_MODELS:
+    if not supports_batch_inference(model_name):
         supported_models = ", ".join(BATCH_SUPPORTED_MODELS)
         raise ValueError(
             "Vertex Batch mode currently supports only these models in this app: "

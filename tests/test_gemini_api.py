@@ -11,7 +11,9 @@ from gemini_api import (
     chunk_by_size,
     extract_text_from_batch_prediction,
     normalize_batch_job_state,
+    supports_batch_inference,
     supports_flex_inference,
+    validate_batch_inference,
     validate_flex_inference,
     validate_vertex_environment,
 )
@@ -108,6 +110,17 @@ class VertexEnvironmentTests(unittest.TestCase):
     def test_validate_flex_inference_rejects_unsupported_model(self):
         with self.assertRaises(ValueError):
             validate_flex_inference("gemini-2.5-flash-lite", location="global")
+
+    def test_supports_batch_inference_for_supported_models(self):
+        self.assertTrue(supports_batch_inference("gemini-2.5-flash-lite"))
+        self.assertFalse(supports_batch_inference("meta/llama-4-maverick"))
+
+    def test_validate_batch_inference_rejects_unsupported_model(self):
+        with self.assertRaises(ValueError):
+            validate_batch_inference(
+                "meta/llama-4-maverick",
+                staging_gcs_uri="gs://demo-bucket/prefix",
+            )
 
 
 class GeminiIntegratorTests(unittest.TestCase):

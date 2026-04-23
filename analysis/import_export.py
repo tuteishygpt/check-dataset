@@ -11,6 +11,7 @@ from datasets import Dataset, Audio, Features, Value
 from huggingface_hub import login, HfApi
 
 import utils
+from core.console import safe_print as print
 from core.state import get_global_results, set_global_results
 from core.cache import get_cached_dataset, cache_dataset
 from core.comparison import select_best_model_result, get_all_model_comparison, find_best_model_pair
