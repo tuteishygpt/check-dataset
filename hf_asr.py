@@ -204,7 +204,7 @@ class HuggingFaceASR:
             # Remove temp directory
             try:
                 os.rmdir(temp_dir)
-            except:
+            except OSError:
                 pass
 
 

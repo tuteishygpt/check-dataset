@@ -412,7 +412,7 @@ class AnalysisConfigTests(unittest.TestCase):
 
     @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
     @patch("analysis.standard.utils.calculate_similarity", side_effect=[(96, "ref1", "hyp1"), (94, "ref2", "hyp2")])
-    @patch("analysis.standard.get_cached_dataset")
+    @patch("analysis.common.get_cached_dataset")
     @patch("builtins.print")
     def test_recheck_analysis_processes_only_problematic_files(
         self,
@@ -493,7 +493,7 @@ class AnalysisConfigTests(unittest.TestCase):
     @patch("analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", "table"))
     @patch("analysis.standard.utils.calculate_similarity", return_value=(97, "ref", "hyp"))
     @patch("analysis.standard.utils.decode_audio_item", return_value=([0.9], 16000, "bad.wav"))
-    @patch("analysis.standard.get_cached_dataset")
+    @patch("analysis.common.get_cached_dataset")
     def test_hf_recheck_decodes_raw_audio_without_array_key(
         self,
         get_cached_dataset_mock,

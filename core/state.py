@@ -8,14 +8,17 @@ import threading
 
 # Global variable to store results for audio playback
 global_results = []
+_results_lock = threading.Lock()
 
 # Cache for downloaded datasets
 dataset_cache = {}
+_cache_lock = threading.Lock()
 
 # Analysis log buffer
 analysis_logs = []
 analysis_logs_lock = threading.Lock()
 analysis_running = False
+_analysis_running_lock = threading.Lock()
 log_capture_installed = False
 original_stdout = sys.stdout
 original_stderr = sys.stderr
@@ -23,36 +26,40 @@ analysis_log_handler = None
 
 # Stop flag for long-running tasks
 stop_requested = False
+_stop_lock = threading.Lock()
 
 
 def get_stop_requested():
     """Check if a stop has been requested."""
-    global stop_requested
-    return stop_requested
+    with _stop_lock:
+        return stop_requested
 
 
 def set_stop_requested(value: bool):
     """Set the stop requested flag."""
     global stop_requested
-    stop_requested = value
+    with _stop_lock:
+        stop_requested = value
 
 
 def get_global_results():
     """Get the global results list."""
-    global global_results
-    return global_results
+    with _results_lock:
+        return global_results
 
 
 def set_global_results(results):
     """Set the global results list."""
     global global_results
-    global_results = results
+    with _results_lock:
+        global_results = results
 
 
 def clear_global_results():
     """Clear all global results."""
     global global_results
-    global_results = []
+    with _results_lock:
+        global_results = []
 
 
 def append_analysis_log(message):
@@ -91,12 +98,14 @@ def clear_analysis_logs():
 def set_analysis_running(value: bool):
     """Set whether an analysis task is currently running."""
     global analysis_running
-    analysis_running = bool(value)
+    with _analysis_running_lock:
+        analysis_running = bool(value)
 
 
 def get_analysis_running():
     """Return whether an analysis task is currently running."""
-    return analysis_running
+    with _analysis_running_lock:
+        return analysis_running
 
 
 class _LogStreamProxy:
@@ -205,13 +214,14 @@ def capture_analysis_prints():
 
 def get_dataset_cache():
     """Get the dataset cache dictionary."""
-    global dataset_cache
-    return dataset_cache
+    with _cache_lock:
+        return dataset_cache
 
 
 def clear_dataset_cache():
     """Clear the dataset cache."""
     global dataset_cache
-    count = len(dataset_cache)
-    dataset_cache.clear()
-    return count
+    with _cache_lock:
+        count = len(dataset_cache)
+        dataset_cache.clear()
+        return count

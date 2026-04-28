@@ -103,9 +103,14 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
             row_id = row.get('id')
             
             target_idx = None
-            if pd.notnull(row_id) and str(row_id).strip() != '' and (int_id := int(float(row_id))) in id_to_idx:
-                target_idx = id_to_idx[int_id]
-            elif fname in path_to_idx:
+            if pd.notnull(row_id) and str(row_id).strip() != '':
+                try:
+                    int_id = int(float(row_id))
+                except (ValueError, OverflowError):
+                    int_id = None
+                if int_id is not None and int_id in id_to_idx:
+                    target_idx = id_to_idx[int_id]
+            if target_idx is None and fname in path_to_idx:
                 target_idx = path_to_idx[fname]
             elif os.path.basename(fname) in basename_to_idx:
                 target_idx = basename_to_idx[os.path.basename(fname)]
@@ -127,7 +132,7 @@ def import_csv_analysis(file_obj, similarity_threshold, dataset_name, limit_file
                 if pd.notnull(model_results_val) and str(model_results_val).strip():
                     try:
                         model_results_dict = json.loads(str(model_results_val))
-                    except:
+                    except (json.JSONDecodeError, TypeError, ValueError):
                         pass
                 
                 if hyp and score > 0:
@@ -312,11 +317,8 @@ def verify_action(data_str, similarity_threshold, dataset_name):
 
 
 def _has_audio_data(audio_array) -> bool:
-    if audio_array is None:
-        return False
-    if hasattr(audio_array, "__len__") and len(audio_array) == 0:
-        return False
-    return True
+    from analysis.common import has_valid_audio
+    return has_valid_audio(audio_array)
 
 
 def _load_verified_source_dataset(dataset_name, verified_data, hf_token):

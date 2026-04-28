@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_state_thread_safety.py -v)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/test_state_thread_safety.py tests/test_analysis_logs.py tests/test_console.py tests/test_ui_audio.py tests/test_ui_text_encoding.py tests/test_env.py -v)",
+      "Bash(python -m pytest tests/test_analysis_common.py -v)",
+      "Bash(python -m pytest tests/test_analysis_common.py tests/test_state_thread_safety.py tests/test_analysis_logs.py tests/test_console.py tests/test_ui_audio.py tests/test_ui_text_encoding.py tests/test_env.py -v)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('analysis/standard.py', doraise=True\\); py_compile.compile\\('analysis/smart.py', doraise=True\\); py_compile.compile\\('analysis/import_export.py', doraise=True\\); py_compile.compile\\('analysis/common.py', doraise=True\\); py_compile.compile\\('core/state.py', doraise=True\\); py_compile.compile\\('hf_asr.py', doraise=True\\); print\\('All files compile OK'\\)\")",
+      "Bash(pip freeze *)",
+      "Bash(pip list *)",
+      "Bash(python -m pytest tests/test_analysis_config.py::AnalysisConfigTests::test_recheck_analysis_processes_only_problematic_files tests/test_analysis_config.py::AnalysisConfigTests::test_hf_recheck_decodes_raw_audio_without_array_key -v --tb=short)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/test_analysis_config.py::AnalysisConfigTests::test_hf_recheck_decodes_raw_audio_without_array_key tests/test_analysis_config.py::AnalysisConfigTests::test_recheck_analysis_processes_only_problematic_files --tb=long)",
+      "Bash(python -m pytest tests/test_analysis_common.py tests/test_analysis_config.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_analysis_common.py tests/test_analysis_config.py::AnalysisConfigTests::test_hf_recheck_decodes_raw_audio_without_array_key tests/test_analysis_config.py::AnalysisConfigTests::test_recheck_analysis_processes_only_problematic_files --tb=long)",
+      "Bash(python -m pytest tests/ --tb=long -k \"test_hf_recheck_decodes_raw_audio_without_array_key or test_recheck_analysis_processes_only_problematic_files\")",
+      "Bash(python -m pytest tests/ -k \"test_hf_recheck_decodes_raw_audio_without_array_key or test_recheck_analysis_processes_only_problematic_files\" --tb=long -v)",
+      "Bash(python -m pytest tests/ -k \"test_load_hf_dataset_keeps_audio_lazy_by_default or test_fresh_analysis_does_not_store_audio_arrays or test_create_verified_dataset_recovers_audio_by_source_idx or test_create_verified_dataset_skips_duplicate_verified_records\" --tb=line)",
+      "Bash(python -m pytest tests/test_memory_regression.py -v --tb=long)",
+      "Bash(python -m pytest tests/ -k \"test_fresh_analysis_does_not_store_audio_arrays\" --tb=long)"
+    ]
+  }
+}

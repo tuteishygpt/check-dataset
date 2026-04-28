@@ -16,6 +16,7 @@ from ui.dashboard import generate_dashboard_outputs
 from gemini_api import GeminiIntegrator, build_generation_config, validate_flex_inference
 from analysis.import_export import save_results_csv
 from gemini_api import is_transcription_error
+from analysis.common import has_valid_audio, resolve_audio, init_result_entry, merge_model_result, load_dataset_cached
 from analysis.standard import (
     ANALYSIS_SCOPE_ALL,
     ANALYSIS_SCOPE_PENDING,
@@ -149,7 +150,7 @@ def run_smart_analysis(
                 sampling_rate = result.get('sampling_rate')
                 ref_text = result.get('ref_text', "")
                 
-                if audio_data is None or len(audio_data) == 0:
+                if not has_valid_audio(audio_data):
                     continue
 
                 hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
@@ -231,26 +232,9 @@ def _smart_recheck_first_pass(
         gr.Info("Няма праблемных файлаў для пераправеркі.")
         return results
 
-    # Load dataset to get audio for files that might be missing it
     limit = None
-    cached_ds = get_cached_dataset(dataset_name, limit)
-    if cached_ds is not None:
-        progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
-        ds = cached_ds
-    else:
-        progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
-        cache_dataset(dataset_name, limit, ds)
-        progress(0.03, desc=f"Датасет закэшаваны")
-    
-    # Build audio map by filename
-    audio_map = {}
-    for item in ds:
-        path = item['audio']['path']
-        if path:
-            fname = os.path.basename(path)
-            audio_map[fname] = item
-            audio_map[path] = item
+    ds = load_dataset_cached(dataset_name, limit, hf_token, progress, initial_progress=0.0)
+    path_index = utils.build_dataset_path_index(ds)
 
     progress(0.05, desc=f"{step_desc}: пераправерка {len(problematic_indices)} запісаў...")
 
@@ -264,29 +248,14 @@ def _smart_recheck_first_pass(
         audio_data = result.get('audio_array')
         sampling_rate = result.get('sampling_rate')
         ref_text = result.get('ref_text', "")
-        
-        # If audio is missing, try to fetch from dataset
-        if audio_data is None or len(audio_data) == 0:
-            path = result.get('path', '')
-            item = audio_map.get(path) or audio_map.get(os.path.basename(path))
 
-            if not item:
-                rec_id = result.get('id')
-                if rec_id is not None:
-                    try:
-                        rec_id = int(rec_id)
-                        if 0 <= rec_id < len(ds):
-                            item = ds[rec_id]
-                    except:
-                        pass
-
-            if item:
-                audio_data = item['audio']['array']
-                sampling_rate = item['audio']['sampling_rate']
+        if not has_valid_audio(audio_data):
+            audio_data, sampling_rate = resolve_audio(ds, result, path_index=path_index)
+            if has_valid_audio(audio_data):
                 results[res_idx]['audio_array'] = audio_data
                 results[res_idx]['sampling_rate'] = sampling_rate
             else:
-                 print(f"Smart Analysis Recheck: Skipping index {res_idx}, path '{path}', id {result.get('id')}: Audio not found.")
+                 print(f"Smart Analysis Recheck: Skipping index {res_idx}, path '{result.get('path', '')}', id {result.get('id')}: Audio not found.")
                  continue
 
         hyp_text = gemini_tool.transcribe_audio(model_name, audio_data, sampling_rate, config=gen_config)
@@ -349,25 +318,9 @@ def _smart_fresh_first_pass(
         if limit_files > 0:
             pending_indices = pending_indices[:limit_files]
 
-        # Load dataset to get audio for pending items
         limit = None
-        cached_ds = get_cached_dataset(dataset_name, limit)
-        if cached_ds is not None:
-            progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
-            ds = cached_ds
-        else:
-            progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-            ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
-            cache_dataset(dataset_name, limit, ds)
-            progress(0.03, desc=f"Датасет закэшаваны")
-
-        # Build audio map
-        audio_map = {}
-        for item in ds:
-            path = item['audio']['path']
-            if path:
-                audio_map[os.path.basename(path)] = item
-                audio_map[path] = item
+        ds = load_dataset_cached(dataset_name, limit, hf_token, progress, initial_progress=0.0)
+        path_index = utils.build_dataset_path_index(ds)
 
         results = global_results
         progress(0.05, desc=f"{step_desc}: апрацоўка {len(pending_indices)} pending запісаў...")
@@ -383,21 +336,9 @@ def _smart_fresh_first_pass(
             sampling_rate = result.get('sampling_rate')
             ref_text = result.get('ref_text', "")
 
-            if audio_data is None or (hasattr(audio_data, '__len__') and len(audio_data) == 0):
-                path = result.get('path', '')
-                item = audio_map.get(path) or audio_map.get(os.path.basename(path))
-                if not item:
-                    rec_id = result.get('id')
-                    if rec_id is not None:
-                        try:
-                            rec_id = int(rec_id)
-                            if 0 <= rec_id < len(ds):
-                                item = ds[rec_id]
-                        except:
-                            pass
-                if item:
-                    audio_data = item['audio']['array']
-                    sampling_rate = item['audio']['sampling_rate']
+            if not has_valid_audio(audio_data):
+                audio_data, sampling_rate = resolve_audio(ds, result, path_index=path_index)
+                if has_valid_audio(audio_data):
                     results[idx]['audio_array'] = audio_data
                     results[idx]['sampling_rate'] = sampling_rate
                 else:
@@ -432,16 +373,7 @@ def _smart_fresh_first_pass(
 
     # No pending files — full fresh run
     limit = int(limit_files) if limit_files > 0 else None
-
-    cached_ds = get_cached_dataset(dataset_name, limit)
-    if cached_ds is not None:
-        progress(0, desc=f"Выкарыстоўваю закэшаваны датасет '{dataset_name}'...")
-        ds = cached_ds
-    else:
-        progress(0, desc=f"Загрузка датасета '{dataset_name}'...")
-        ds = utils.load_hf_dataset(dataset_name, limit=limit, hf_token=hf_token)
-        cache_dataset(dataset_name, limit, ds)
-        progress(0.05, desc=f"Датасет закэшаваны для паўторнага выкарыстання")
+    ds = load_dataset_cached(dataset_name, limit, hf_token, progress, initial_progress=0.0)
 
     results = []
     progress(0.05, desc=f"{step_desc}: апрацоўка ўсіх {len(ds)} запісаў...")

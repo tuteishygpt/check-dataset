@@ -76,7 +76,7 @@ class AnalysisMemoryTests(unittest.TestCase):
         gemini_tool = mock.Mock()
         gemini_tool.transcribe_audio.side_effect = ["alpha", "beta"]
 
-        with mock.patch("analysis.standard.get_cached_dataset", return_value=dataset), mock.patch(
+        with mock.patch("analysis.common.get_cached_dataset", return_value=dataset), mock.patch(
             "analysis.standard.generate_dashboard_outputs", return_value=("stats", "flagged", [])
         ), mock.patch("analysis.standard.save_results_csv"), mock.patch(
             "analysis.standard.utils.decode_audio_item",
